@@ -42,10 +42,12 @@
     <Compile Include="Binding.cs" />
     <Compile Include="DynamicConverter.cs" />
     <Compile Include="DynamicMultiConverter.cs" />
+    <Compile Include="DynamicSingleConverter.cs" />
     <Compile Include="EquationTokenizer.cs" />
     <Compile Include="MultiBinding.cs" />
     <Compile Include="Operator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="QuickConverter.cs" />
     <Compile Include="Tokens\ArgumentListToken.cs" />
     <Compile Include="Tokens\ArrayAccessToken.cs" />
     <Compile Include="Tokens\AssignmentToken.cs" />
