@@ -70,8 +70,7 @@ namespace QuickConverter
 
 		public override object ProvideValue(IServiceProvider serviceProvider)
 		{
-			var pvt = serviceProvider as IProvideValueTarget;
-			if (pvt == null || P == null)
+			if (P == null)
 				return null;
 
 			ParameterExpression inputP, inputV, value;

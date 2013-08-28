@@ -16,6 +16,7 @@ namespace QuickConverter
 		private static string[] representations = new[] { "+", "-", "!", "*", "/", "%", "+", "-", ">=", "<=", ">", "<", "==", "!=", "&&", "||", null };
 		private static Tuple<string, string>[] namespaces = new Tuple<string, string>[0];
 		private static Dictionary<string, Type> types = new Dictionary<string, Type>();
+		private static HashSet<string> assemblies = new HashSet<string>();
 		private static TokenBase[] valueTypeInstanceList;
 		private static TokenBase[] postValueTypeInstanceList;
 		static EquationTokenizer()
@@ -76,6 +77,15 @@ namespace QuickConverter
 			namespaces = namespaces.Concat(new[] { new Tuple<string, string>(type.Namespace, type.Assembly.FullName) }).ToArray();
 		}
 
+		/// <summary>
+		/// Adds an assembly to search through when using full type names.
+		/// </summary>
+		/// <param name="assembly">The assembly to add.</param>
+		public static void AddAssembly(Assembly assembly)
+		{
+			assemblies.Add(assembly.FullName);
+		}
+
 		internal static bool TryGetType(string name, List<Type> typeParams, out Type type)
 		{
 			if (typeParams != null)
@@ -90,7 +100,10 @@ namespace QuickConverter
 				return type != null;
 			}
 			if (name.Contains('.'))
-				type = Type.GetType(name);
+			{
+				type = assemblies.Select(s => Type.GetType(name + ", " + s)).FirstOrDefault();
+				types.Add(name, type);
+			}
 			else
 			{
 				Type[] matches = namespaces.Select(str => Type.GetType(str.Item1 + "." + name + ", " + str.Item2)).Where(t => t != null).ToArray();

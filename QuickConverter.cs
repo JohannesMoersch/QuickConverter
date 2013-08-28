@@ -101,10 +101,6 @@ namespace QuickConverter
 
 		public override object ProvideValue(IServiceProvider serviceProvider)
 		{
-			var pvt = serviceProvider as IProvideValueTarget;
-			if (pvt == null)
-				return null;
-
 			ParameterExpression inputP, inputV, value;
 			List<string> values;
 			Tuple<Func<object, object[], object>, string[]> toFunc = null;
