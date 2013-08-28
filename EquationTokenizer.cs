@@ -100,10 +100,7 @@ namespace QuickConverter
 				return type != null;
 			}
 			if (name.Contains('.'))
-			{
 				type = assemblies.Select(s => Type.GetType(name + ", " + s)).FirstOrDefault(t => t != null);
-				types.Add(name, type);
-			}
 			else
 			{
 				Type[] matches = namespaces.Select(str => Type.GetType(str.Item1 + "." + name + ", " + str.Item2)).Where(t => t != null).ToArray();
