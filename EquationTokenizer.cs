@@ -101,7 +101,7 @@ namespace QuickConverter
 			}
 			if (name.Contains('.'))
 			{
-				type = assemblies.Select(s => Type.GetType(name + ", " + s)).FirstOrDefault();
+				type = assemblies.Select(s => Type.GetType(name + ", " + s)).FirstOrDefault(t => t != null);
 				types.Add(name, type);
 			}
 			else
