@@ -173,7 +173,7 @@ namespace QuickConverter
 					return false;
 				tokens.Add(newToken);
 				text = text.TrimStart();
-				for (int i = (int)Operator.Multiply; i < (int)Operator.Or; ++i)
+				for (int i = (int)Operator.Multiply; i <= (int)Operator.Or; ++i)
 				{
 					if (text.StartsWith(representations[i]))
 					{
