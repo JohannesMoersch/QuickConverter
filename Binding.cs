@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Markup;
+using System.Xaml;
 
 namespace QuickConverter
 {
@@ -73,6 +74,23 @@ namespace QuickConverter
 			if (P == null)
 				return null;
 
+			bool getExpression;
+			if (serviceProvider == null)
+				getExpression = false;
+			else
+			{
+				var targetProvider = serviceProvider.GetService(typeof(IProvideValueTarget)) as IProvideValueTarget;
+				if (targetProvider == null || !(targetProvider.TargetProperty is PropertyInfo))
+					getExpression = true;
+				else
+				{
+					Type propType = (targetProvider.TargetProperty as PropertyInfo).PropertyType;
+					if (propType == typeof(Binding))
+						return this;
+					getExpression = !propType.IsAssignableFrom(typeof(System.Windows.Data.MultiBinding));
+				}
+			}
+
 			ParameterExpression inputP, inputV, value;
 			List<string> values;
 			Tuple<Func<object, object[], object>, string[]> toFunc = null;
@@ -114,7 +132,7 @@ namespace QuickConverter
 			holder.Bindings.Add(P);
 			holder.Converter = new DynamicConverter(toFunc != null ? toFunc.Item1 : null, fromFunc != null ? fromFunc.Item1 : null, toVals, fromVals);
 
-			return holder.ProvideValue(serviceProvider);
+			return getExpression ? holder.ProvideValue(serviceProvider) : holder;
 		}
 	}
 }

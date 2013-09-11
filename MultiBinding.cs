@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Windows.Data;
 using System.Windows.Markup;
+using System.Xaml;
 
 namespace QuickConverter
 {
@@ -88,6 +90,23 @@ namespace QuickConverter
 
 		public override object ProvideValue(IServiceProvider serviceProvider)
 		{
+			bool getExpression;
+			if (serviceProvider == null)
+				getExpression = false;
+			else
+			{
+				var targetProvider = serviceProvider.GetService(typeof(IProvideValueTarget)) as IProvideValueTarget;
+				if (targetProvider == null || !(targetProvider.TargetProperty is PropertyInfo))
+					getExpression = true;
+				else
+				{
+					Type propType = (targetProvider.TargetProperty as PropertyInfo).PropertyType;
+					if (propType == typeof(MultiBinding))
+						return this;
+					getExpression = !propType.IsAssignableFrom(typeof(System.Windows.Data.MultiBinding));
+				}
+			}
+
 			Tuple<Func<object[], object[], object>, string[], string[]> func = null;
 			if (Converter != null && !functions.TryGetValue(Converter, out func))
 			{
@@ -130,7 +149,7 @@ namespace QuickConverter
 			var vals = func.Item3.Select(str => typeof(MultiBinding).GetProperty(str).GetValue(this, null)).ToArray();
 			holder.Converter = new DynamicMultiConverter(func.Item1, vals);
 
-			return holder.ProvideValue(serviceProvider);
+			return getExpression ? holder.ProvideValue(serviceProvider) : holder;
 		}
 	}
 }
