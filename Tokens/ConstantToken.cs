@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -65,7 +66,7 @@ namespace QuickConverter.Tokens
 					if (c == 'u' && text.Length > count + 1 && Char.ToLower(text[count]) == 'l')
 					{
 						ulong val;
-						if (UInt64.TryParse(temp, out val))
+						if (UInt64.TryParse(temp, NumberStyles.Any, new CultureInfo("en-us"), out val))
 						{
 							ret = val;
 							++count;
@@ -74,31 +75,31 @@ namespace QuickConverter.Tokens
 					else if (c == 'u')
 					{
 						uint val;
-						if (UInt32.TryParse(temp, out val))
+						if (UInt32.TryParse(temp, NumberStyles.Any, new CultureInfo("en-us"), out val))
 							ret = val;
 					}
 					else if (c == 'l')
 					{
 						long val;
-						if (Int64.TryParse(temp, out val))
+						if (Int64.TryParse(temp, NumberStyles.Any, new CultureInfo("en-us"), out val))
 							ret = val;
 					}
 					else if (c == 'f')
 					{
 						float val;
-						if (Single.TryParse(temp, out val))
+						if (Single.TryParse(temp, NumberStyles.Any, new CultureInfo("en-us"), out val))
 							ret = val;
 					}
 					else if (c == 'd')
 					{
 						double val;
-						if (Double.TryParse(temp, out val))
+						if (Double.TryParse(temp, NumberStyles.Any, new CultureInfo("en-us"), out val))
 							ret = val;
 					}
 					else if (c == 'm')
 					{
 						decimal val;
-						if (Decimal.TryParse(temp, out val))
+						if (Decimal.TryParse(temp, NumberStyles.Any, new CultureInfo("en-us"), out val))
 							ret = val;
 					}
 					if (ret != null)
@@ -113,14 +114,14 @@ namespace QuickConverter.Tokens
 				int val2;
 				if (temp.Contains('.'))
 				{
-					if (Double.TryParse(temp, out val1))
+					if (Double.TryParse(temp, NumberStyles.Any, new CultureInfo("en-us"), out val1))
 					{
 						text = text.Substring(count);
 						token = new ConstantToken() { value = val1 };
 						return true;
 					}
 				}
-				else if (Int32.TryParse(temp, out val2))
+				else if (Int32.TryParse(temp, NumberStyles.Any, new CultureInfo("en-us"), out val2))
 				{
 					text = text.Substring(count);
 					token = new ConstantToken() { value = val2 };
