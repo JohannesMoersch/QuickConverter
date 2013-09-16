@@ -13,7 +13,7 @@ namespace QuickConverter
 	public static class EquationTokenizer
 	{
 		private static int[] precedenceLevel = new[] { 1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4, 4, 5, 5, 6, 7, 8 };
-		private static string[] representations = new[] { "+", "-", "!", "*", "/", "%", "+", "-", ">=", "<=", ">", "<", "==", "!=", "&&", "||", null };
+		private static string[] representations = new[] { "+", "-", "!", "*", "/", "%", "+", "-", ">=", "<=", ">", "<", "==", "!=", "&", "|", "&&", "||", null };
 		private static Tuple<string, string>[] namespaces = new Tuple<string, string>[0];
 		private static Dictionary<string, Type> types = new Dictionary<string, Type>();
 		private static HashSet<string> assemblies = new HashSet<string>();
