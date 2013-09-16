@@ -64,6 +64,8 @@ namespace QuickConverter
 		/// <param name="assembly">The assembly which contains this namespace.</param>
 		public static void AddNamespace(string ns, Assembly assembly)
 		{
+			if (namespaces.Where(tuple => tuple.Item1 == ns).Any(t => t.Item2 == assembly.FullName))
+				return;
 			namespaces = namespaces.Concat(new[] { new Tuple<string, string>(ns, assembly.FullName) }).ToArray();
 		}
 
@@ -74,7 +76,7 @@ namespace QuickConverter
 		/// <param name="type">The type whose namespace to add.</param>
 		public static void AddNamespace(Type type)
 		{
-			namespaces = namespaces.Concat(new[] { new Tuple<string, string>(type.Namespace, type.Assembly.FullName) }).ToArray();
+			AddNamespace(type.Namespace, type.Assembly);
 		}
 
 		/// <summary>
