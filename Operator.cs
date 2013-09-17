@@ -21,10 +21,10 @@ namespace QuickConverter
 		LessThan = 11,
 		Equals = 12,
 		NotEquals = 13,
-		BitwiseAnd = 14,
-		BitwiseOr = 15,
-		And = 16,
-		Or = 17,
+		And = 14,
+		Or = 15,
+		BitwiseAnd = 16,
+		BitwiseOr = 17,
 		Ternary = 18
 	}
 }

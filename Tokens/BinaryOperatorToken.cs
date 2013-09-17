@@ -26,10 +26,10 @@ namespace QuickConverter.Tokens
 			ExpressionType.LessThan,
 			ExpressionType.Equal,
 			ExpressionType.NotEqual,
-			ExpressionType.And,
-			ExpressionType.Or,
 			ExpressionType.AndAlso,
 			ExpressionType.OrElse,
+			ExpressionType.And,
+			ExpressionType.Or,
 			default(ExpressionType)
 		};
 
