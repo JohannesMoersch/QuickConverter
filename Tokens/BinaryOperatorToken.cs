@@ -30,6 +30,7 @@ namespace QuickConverter.Tokens
 			ExpressionType.OrElse,
 			ExpressionType.And,
 			ExpressionType.Or,
+			ExpressionType.ExclusiveOr,
 			default(ExpressionType)
 		};
 

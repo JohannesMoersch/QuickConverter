@@ -25,6 +25,7 @@ namespace QuickConverter
 		Or = 15,
 		BitwiseAnd = 16,
 		BitwiseOr = 17,
-		Ternary = 18
+		BitwiseXor = 18,
+		Ternary = 19
 	}
 }
