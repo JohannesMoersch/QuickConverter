@@ -33,6 +33,9 @@ namespace QuickConverter
 				catch { return null; }
 			}
 
+			if (result == null)
+				return null;
+
 			if (targetType == typeof(string))
 				return result.ToString();
 

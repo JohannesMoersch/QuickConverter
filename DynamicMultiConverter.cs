@@ -27,6 +27,9 @@ namespace QuickConverter
 			try { result = _converter(values, _values); }
 			catch { return null; }
 
+			if (result == null)
+				return null;
+
 			if (targetType == typeof(string))
 				return result.ToString();
 
