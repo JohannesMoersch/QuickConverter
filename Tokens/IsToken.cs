@@ -31,7 +31,7 @@ namespace QuickConverter.Tokens
 
 		public override Expression GetExpression(List<ParameterExpression> parameters, Type dynamicContext = null)
 		{
-			return Expression.TypeIs(Target.GetExpression(parameters, dynamicContext), type);
+			return Expression.Convert(Expression.TypeIs(Target.GetExpression(parameters, dynamicContext), type), typeof(object));
 		}
 	}
 }
