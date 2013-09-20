@@ -10,12 +10,23 @@ namespace QuickConverter.Tokens
 	{
 		private char open;
 		private char close;
+		private bool findAssignments;
 		private Type assignmentType;
 		private bool allowSubLists;
-		internal ArgumentListToken(char open, char close, Type assignmentType = null)
+		internal ArgumentListToken(char open, char close)
 		{
 			this.open = open;
 			this.close = close;
+			findAssignments = false;
+			assignmentType = null;
+			allowSubLists = false;
+		}
+
+		internal ArgumentListToken(char open, char close, Type assignmentType)
+		{
+			this.open = open;
+			this.close = close;
+			findAssignments = true;
 			this.assignmentType = assignmentType;
 			allowSubLists = false;
 		}
@@ -24,6 +35,7 @@ namespace QuickConverter.Tokens
 		{
 			this.open = open;
 			this.close = close;
+			findAssignments = false;
 			assignmentType = null;
 			this.allowSubLists = allowSubLists;
 		}
@@ -49,7 +61,7 @@ namespace QuickConverter.Tokens
 					else
 						return false;
 				}
-				else if (assignmentType != null)
+				else if (findAssignments)
 				{
 					if (new AssignmentToken(assignmentType).TryGetToken(ref s, out newToken))
 						list.Add(newToken);
@@ -69,7 +81,7 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		public override Expression GetExpression(List<ParameterExpression> parameters, Type dynamicContext = null)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext)
 		{
 			throw new NotImplementedException();
 		}

@@ -140,6 +140,13 @@ namespace QuickConverter.Tokens
 		}
 
 		internal abstract bool TryGetToken(ref string text, out TokenBase token);
-		public abstract Expression GetExpression(List<ParameterExpression> parameters, Type dynamicContext = null);
+
+		public Expression GetExpression(out List<ParameterExpression> parameters, Type dynamicContext = null)
+		{
+			parameters = new List<ParameterExpression>();
+			return GetExpression(parameters, new Dictionary<string, ConstantExpression>(), dynamicContext);
+		}
+
+		internal abstract Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext);
 	}
 }

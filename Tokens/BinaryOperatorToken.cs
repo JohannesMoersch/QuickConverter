@@ -49,14 +49,14 @@ namespace QuickConverter.Tokens
 			throw new NotImplementedException();
 		}
 
-		public override Expression GetExpression(List<ParameterExpression> parameters, Type dynamicContext = null)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext)
 		{
 			if (operation == Operator.And)
-				return Expression.Convert(Expression.AndAlso(Expression.Convert(left.GetExpression(parameters, dynamicContext), typeof(bool)), Expression.Convert(right.GetExpression(parameters, dynamicContext), typeof(bool))), typeof(object));
+				return Expression.Convert(Expression.AndAlso(Expression.Convert(left.GetExpression(parameters, locals, dynamicContext), typeof(bool)), Expression.Convert(right.GetExpression(parameters, locals, dynamicContext), typeof(bool))), typeof(object));
 			if (operation == Operator.Or)
-				return Expression.Convert(Expression.OrElse(Expression.Convert(left.GetExpression(parameters, dynamicContext), typeof(bool)), Expression.Convert(right.GetExpression(parameters, dynamicContext), typeof(bool))), typeof(object));
+				return Expression.Convert(Expression.OrElse(Expression.Convert(left.GetExpression(parameters, locals, dynamicContext), typeof(bool)), Expression.Convert(right.GetExpression(parameters, locals, dynamicContext), typeof(bool))), typeof(object));
 			CallSiteBinder binder = Binder.BinaryOperation(CSharpBinderFlags.None, types[(int)operation], dynamicContext ?? typeof(object), new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null), CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
-			return Expression.Dynamic(binder, typeof(object), left.GetExpression(parameters, dynamicContext), right.GetExpression(parameters, dynamicContext));
+			return Expression.Dynamic(binder, typeof(object), left.GetExpression(parameters, locals, dynamicContext), right.GetExpression(parameters, locals, dynamicContext));
 		}
 	}
 }

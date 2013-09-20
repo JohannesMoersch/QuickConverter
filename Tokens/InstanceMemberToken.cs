@@ -33,10 +33,10 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		public override Expression GetExpression(List<ParameterExpression> parameters, Type dynamicContext = null)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext)
 		{
 			CallSiteBinder binder = Binder.GetMember(CSharpBinderFlags.None, memberName, dynamicContext ?? typeof(object), new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
-			return Expression.Dynamic(binder, typeof(object), (this as IPostToken).Target.GetExpression(parameters, dynamicContext));
+			return Expression.Dynamic(binder, typeof(object), (this as IPostToken).Target.GetExpression(parameters, locals, dynamicContext));
 		}
 	}
 }

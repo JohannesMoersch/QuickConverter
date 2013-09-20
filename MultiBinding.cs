@@ -79,8 +79,8 @@ namespace QuickConverter
 
 		private Tuple<Delegate, ParameterExpression[]> GetLambda(string expression)
 		{
-			List<ParameterExpression> parameters = new List<ParameterExpression>();
-			Expression exp = EquationTokenizer.Tokenize(expression).GetExpression(parameters, DynamicContext);
+			List<ParameterExpression> parameters;
+			Expression exp = EquationTokenizer.Tokenize(expression).GetExpression(out parameters, DynamicContext);
 			var invalid = parameters.FirstOrDefault(par => par.Name.Length != 2 || (par.Name[0] != 'P' && par.Name[0] != 'V') || !Char.IsDigit(par.Name[1]));
 			if (invalid != null)
 				throw new Exception("\"$" + invalid.Name + "\" is not a valid parameter name for conversion from source.");

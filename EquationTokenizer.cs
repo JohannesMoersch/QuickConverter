@@ -29,6 +29,7 @@ namespace QuickConverter
 					new ParameterToken(),
 					new ConstantToken(),
 					new UnaryOperatorToken(),
+					new LambdaToken(),
 					new BracketedToken(),
 					new TypeCastToken(),
 					new TypeofToken()

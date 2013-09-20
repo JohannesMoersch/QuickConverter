@@ -29,9 +29,9 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		public override Expression GetExpression(List<ParameterExpression> parameters, Type dynamicContext = null)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext)
 		{
-			return Expression.Convert(Expression.TypeIs(Target.GetExpression(parameters, dynamicContext), type), typeof(object));
+			return Expression.Convert(Expression.TypeIs(Target.GetExpression(parameters, locals, dynamicContext), type), typeof(object));
 		}
 	}
 }

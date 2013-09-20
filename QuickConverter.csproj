@@ -40,6 +40,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binding.cs" />
+    <Compile Include="DataContainer.cs" />
     <Compile Include="DynamicConverter.cs" />
     <Compile Include="DynamicMultiConverter.cs" />
     <Compile Include="DynamicSingleConverter.cs" />
@@ -59,6 +60,7 @@
     <Compile Include="Tokens\InstanceMemberToken.cs" />
     <Compile Include="Tokens\IPostToken.cs" />
     <Compile Include="Tokens\IsToken.cs" />
+    <Compile Include="Tokens\LambdaToken.cs" />
     <Compile Include="Tokens\ParameterToken.cs" />
     <Compile Include="Tokens\StaticFunctionToken.cs" />
     <Compile Include="Tokens\StaticMemberToken.cs" />

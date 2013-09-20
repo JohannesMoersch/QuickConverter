@@ -42,14 +42,14 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		public override Expression GetExpression(List<ParameterExpression> parameters, Type dynamicContext = null)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext)
 		{
 			Expression[] args = new Expression[arguments.Arguments.Count];
 			ParameterInfo[] pars = method.GetParameters();
 			for (int i = 0; i < pars.Length; ++i)
 			{
 				CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, pars[i].ParameterType, dynamicContext ?? typeof(object));
-				args[i] = Expression.Dynamic(binder, pars[i].ParameterType, arguments.Arguments[i].GetExpression(parameters, dynamicContext));
+				args[i] = Expression.Dynamic(binder, pars[i].ParameterType, arguments.Arguments[i].GetExpression(parameters, locals, dynamicContext));
 			}
 			return Expression.Convert(Expression.Call(method, args), typeof(object));
 		}

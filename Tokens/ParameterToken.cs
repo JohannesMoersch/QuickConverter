@@ -26,8 +26,10 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		public override Expression GetExpression(List<ParameterExpression> parameters, Type dynamicContext = null)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext)
 		{
+			if (locals.ContainsKey(name))
+				return Expression.Field(locals[name], "Value");
 			ParameterExpression par = parameters.FirstOrDefault(p => p.Name == name);
 			if (par == null)
 			{

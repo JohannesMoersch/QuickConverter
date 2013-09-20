@@ -92,7 +92,7 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		private IEnumerable<object> ConvertInitializers(ArgumentListToken arguments, List<ParameterExpression> parameters, Type dynamicContext, Type[] expectedTypes)
+		private IEnumerable<object> ConvertInitializers(ArgumentListToken arguments, List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext, Type[] expectedTypes)
 		{
 			foreach (TokenBase token in arguments.Arguments)
 			{
@@ -104,7 +104,7 @@ namespace QuickConverter.Tokens
 					foreach (ParameterInfo info in add.GetParameters())
 					{
 						CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, info.ParameterType, dynamicContext);
-						exps[i] = Expression.Dynamic(binder, info.ParameterType, (token as ArgumentListToken).Arguments[i++].GetExpression(parameters, dynamicContext));
+						exps[i] = Expression.Dynamic(binder, info.ParameterType, (token as ArgumentListToken).Arguments[i++].GetExpression(parameters, locals, dynamicContext));
 					}
 					yield return Expression.ElementInit(add, exps);
 				}
@@ -112,12 +112,12 @@ namespace QuickConverter.Tokens
 				{
 					MethodInfo add = constructor.DeclaringType.GetMethods(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(m => m.Name == "Add" && m.GetParameters().Length == 1);
 					CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, add.GetParameters()[0].ParameterType, dynamicContext);
-					yield return Expression.ElementInit(add, Expression.Dynamic(binder, add.GetParameters()[0].ParameterType, token.GetExpression(parameters, dynamicContext)));
+					yield return Expression.ElementInit(add, Expression.Dynamic(binder, add.GetParameters()[0].ParameterType, token.GetExpression(parameters, locals, dynamicContext)));
 				}
 			}
 		}
 
-		public override Expression GetExpression(List<ParameterExpression> parameters, Type dynamicContext = null)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext)
 		{
 			Expression exp;
 			if (constructor != null)
@@ -125,7 +125,7 @@ namespace QuickConverter.Tokens
 				ParameterInfo[] info = constructor.GetParameters();
 				List<Expression> args = new List<Expression>();
 				for (int i = 0; i < info.Length; ++i)
-					args.Add(Expression.Dynamic(Binder.Convert(CSharpBinderFlags.None, info[i].ParameterType, dynamicContext ?? typeof(object)), info[i].ParameterType, arguments.Arguments[i].GetExpression(parameters, dynamicContext)));
+					args.Add(Expression.Dynamic(Binder.Convert(CSharpBinderFlags.None, info[i].ParameterType, dynamicContext ?? typeof(object)), info[i].ParameterType, arguments.Arguments[i].GetExpression(parameters, locals, dynamicContext)));
 				exp = Expression.New(constructor, args);
 				if (initializers != null)
 				{
@@ -133,11 +133,11 @@ namespace QuickConverter.Tokens
 					if (initializers.Arguments.Any(token => token is AssignmentToken))
 					{
 						Func<MemberInfo, Type> getType = mem => mem is FieldInfo ? (mem as FieldInfo).FieldType : (mem as PropertyInfo).PropertyType;
-						var inits = initializers.Arguments.Cast<AssignmentToken>().Select(token => new Tuple<MemberInfo, Expression>(token.Member, Expression.Dynamic(Binder.Convert(CSharpBinderFlags.None, getType(token.Member), dynamicContext ?? typeof(object)), getType(token.Member), token.Value.GetExpression(parameters, dynamicContext))));
+						var inits = initializers.Arguments.Cast<AssignmentToken>().Select(token => new Tuple<MemberInfo, Expression>(token.Member, Expression.Dynamic(Binder.Convert(CSharpBinderFlags.None, getType(token.Member), dynamicContext ?? typeof(object)), getType(token.Member), token.Value.GetExpression(parameters, locals, dynamicContext))));
 						exp = Expression.MemberInit(exp as NewExpression, inits.Select(init => (MemberBinding)Expression.Bind(init.Item1, init.Item2)));
 					}
 					else
-						exp = Expression.ListInit(exp as NewExpression, ConvertInitializers(initializers, parameters, dynamicContext, null).Cast<ElementInit>());
+						exp = Expression.ListInit(exp as NewExpression, ConvertInitializers(initializers, parameters, locals, dynamicContext, null).Cast<ElementInit>());
 				}
 			}
 			else
@@ -145,12 +145,12 @@ namespace QuickConverter.Tokens
 				if (initializers != null)
 				{
 					CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, arrayType, dynamicContext ?? typeof(object));
-					exp = Expression.NewArrayInit(arrayType, initializers.Arguments.Select(token => Expression.Dynamic(binder, arrayType, token.GetExpression(parameters, dynamicContext))));
+					exp = Expression.NewArrayInit(arrayType, initializers.Arguments.Select(token => Expression.Dynamic(binder, arrayType, token.GetExpression(parameters, locals, dynamicContext))));
 				}
 				else
 				{
 					CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, typeof(int), dynamicContext ?? typeof(object));
-					exp = Expression.NewArrayBounds(arrayType, arguments.Arguments.Select(token => Expression.Dynamic(binder, typeof(int), token.GetExpression(parameters, dynamicContext))));
+					exp = Expression.NewArrayBounds(arrayType, arguments.Arguments.Select(token => Expression.Dynamic(binder, typeof(int), token.GetExpression(parameters, locals, dynamicContext))));
 				}
 			}
 			return Expression.Convert(exp, typeof(object));

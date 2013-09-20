@@ -15,6 +15,7 @@ namespace QuickConverter.Tokens
 			this.type = type;
 		}
 
+		internal string Name { get; private set; }
 		internal MemberInfo Member { get; private set; }
 		internal TokenBase Value { get; private set; }
 
@@ -29,9 +30,20 @@ namespace QuickConverter.Tokens
 				++count;
 			string name = temp.Substring(0, count);
 
-			MemberInfo info = type.GetMember(name).FirstOrDefault();
-			if (info == null)
-				return false;
+			MemberInfo info = null;
+			if (type != null)
+			{
+				info = type.GetMember(name).FirstOrDefault();
+				if (info == null)
+					return false;
+			}
+			else
+			{
+				string nameTemp = "$" + name;
+				TokenBase tokenTemp;
+				if (!new ParameterToken().TryGetToken(ref nameTemp, out tokenTemp))
+					return false;
+			}
 
 			temp = temp.Substring(count).TrimStart();
 			if (temp.Length == 0 || temp[0] != '=')
@@ -41,13 +53,13 @@ namespace QuickConverter.Tokens
 			if (!EquationTokenizer.TryEvaluateExpression(temp, out valToken))
 				return false;
 			text = "";
-			token = new AssignmentToken(null) { Member = info, Value = valToken };
+			token = new AssignmentToken(null) { Name = name, Member = info, Value = valToken };
 			return true;
 		}
 
-		public override Expression GetExpression(List<ParameterExpression> parameters, Type dynamicContext = null)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext)
 		{
-			return Value.GetExpression(parameters, dynamicContext);
+			return Value.GetExpression(parameters, locals, dynamicContext);
 		}
 	}
 }

@@ -60,8 +60,8 @@ namespace QuickConverter
 
 		internal static Tuple<Delegate, ParameterExpression[]> GetLambda(string expression, bool convertBack, Type dynamicContext)
 		{
-			List<ParameterExpression> parameters = new List<ParameterExpression>();
-			Expression exp = EquationTokenizer.Tokenize(expression).GetExpression(parameters, dynamicContext);
+			List<ParameterExpression> parameters;
+			Expression exp = EquationTokenizer.Tokenize(expression).GetExpression(out parameters, dynamicContext);
 			ParameterExpression invalid;
 			if (convertBack)
 				invalid = parameters.FirstOrDefault(par => !((par.Name[0] == 'V' && par.Name.Length == 2 && Char.IsDigit(par.Name[1])) || (par.Name == "value")));
