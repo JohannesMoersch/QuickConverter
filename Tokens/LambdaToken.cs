@@ -45,7 +45,10 @@ namespace QuickConverter.Tokens
 				locals.Add(arg.Name, value);
 			}
 			IEnumerable<BinaryExpression> assignments = Arguments.Arguments.Cast<AssignmentToken>().Zip(newLocals, (t, l) => Expression.Assign(Expression.Field(l, "Value"), t.Value.GetExpression(parameters, locals, dynamicContext)));
-			return Expression.Block(assignments.Cast<Expression>().Concat(new Expression[] { Value.GetExpression(parameters, locals, dynamicContext) }));
+			Expression ret = Expression.Block(assignments.Cast<Expression>().Concat(new Expression[] { Value.GetExpression(parameters, locals, dynamicContext) }));
+			foreach (var arg in Arguments.Arguments.Cast<AssignmentToken>())
+				locals.Remove(arg.Name);
+			return ret;
 		}
 	}
 }
