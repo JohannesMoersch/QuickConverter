@@ -39,8 +39,15 @@ namespace QuickConverter.Tokens
 				return false;
 			bool array = temp[0] == '[';
 			TokenBase args;
-			ConstructorInfo[] cons = null;
-			if (array)
+			List<ConstructorInfo> cons = null;
+			if (type.IsArray)
+			{
+				type = type.GetElementType();
+				array = true;
+				string s = "[]";
+				new ArgumentListToken('[', ']').TryGetToken(ref s, out args);
+			}
+			else if (array)
 			{
 				if (!new ArgumentListToken('[', ']').TryGetToken(ref temp, out args))
 					return false;
@@ -49,10 +56,23 @@ namespace QuickConverter.Tokens
 			{
 				if (!new ArgumentListToken('(', ')').TryGetToken(ref temp, out args))
 					return false;
-				cons = type.GetConstructors().Where(info => info.GetParameters().Length == (args as ArgumentListToken).Arguments.Count).ToArray();
-				if (cons.Length > 1)
-					throw new Exception("Ambiguous constructor call with " + (args as ArgumentListToken).Arguments.Count + " parameters found for type " + type.FullName + ".");
-				if (cons.Length == 0)
+				cons = type.GetConstructors().Where(info => info.GetParameters().Length == (args as ArgumentListToken).Arguments.Count).ToList();
+				for (int i = cons.Count - 1; i >= 0; --i)
+				{
+					for (int j = 0; j < (args as ArgumentListToken).Arguments.Count; ++j)
+					{
+						TypeCastToken cast = (args as ArgumentListToken).Arguments[j] as TypeCastToken;
+						if (cast != null && !cons[i].GetParameters()[j].ParameterType.IsAssignableFrom(cast.TargetType))
+						{
+							cons.RemoveAt(j);
+							break;
+						}
+					}
+				}
+				
+				if (cons.Count > 1)
+					throw new Exception("Ambiguous constructor call with " + (args as ArgumentListToken).Arguments.Count + " parameter(s) found for type " + type.FullName + ". Try using type casts to disambiguate the call.");
+				if (cons.Count == 0)
 					return false;
 			}
 

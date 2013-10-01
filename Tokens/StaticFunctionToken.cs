@@ -31,6 +31,18 @@ namespace QuickConverter.Tokens
 					continue;
 				if ((args as ArgumentListToken).Arguments.Count == (method.Item1 as MethodInfo).GetParameters().Length)
 				{
+					bool good = true;
+					for (int i = 0; i < (args as ArgumentListToken).Arguments.Count; ++i)
+					{
+						TypeCastToken cast = (args as ArgumentListToken).Arguments[i] as TypeCastToken;
+						if (cast != null && !(method.Item1 as MethodInfo).GetParameters()[i].ParameterType.IsAssignableFrom(cast.TargetType))
+						{
+							good = false;
+							break;
+						}
+					}
+					if (!good)
+						continue;
 					info = new Tuple<MethodInfo, TokenBase, string>(method.Item1 as MethodInfo, args, temp);
 					break;
 				}

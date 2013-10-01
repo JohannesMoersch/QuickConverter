@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using QuickConverter;
@@ -17,8 +18,11 @@ namespace QuickConverter
 		private static Tuple<string, string>[] namespaces = new Tuple<string, string>[0];
 		private static Dictionary<string, Type> types = new Dictionary<string, Type>();
 		private static HashSet<string> assemblies = new HashSet<string>();
+		private static Dictionary<string, List<MethodInfo>> methods = new Dictionary<string, List<MethodInfo>>();
+		private static Dictionary<string, Dictionary<Type, List<MethodInfo>>> methodCache = new Dictionary<string, Dictionary<Type, List<MethodInfo>>>();
 		private static TokenBase[] valueTypeInstanceList;
 		private static TokenBase[] postValueTypeInstanceList;
+		internal static bool SupportsExtensionMethods { get { return methods.Count != 0; } }
 		static EquationTokenizer()
 		{
 			valueTypeInstanceList = new TokenBase[]
@@ -87,6 +91,214 @@ namespace QuickConverter
 		public static void AddAssembly(Assembly assembly)
 		{
 			assemblies.Add(assembly.FullName);
+		}
+
+		/// <summary>
+		/// Adds the extension methods declared in the specified class.
+		/// </summary>
+		/// <param name="parentClass">The extension method's parent class.</param>
+		public static void AddExtensionMethods(Type parentClass)
+		{
+			foreach (var method in parentClass.GetMethods().Where(m => m.GetCustomAttributes(typeof(ExtensionAttribute), false).Count() != 0))
+			{
+				List<MethodInfo> list;
+				if (!methods.TryGetValue(method.Name, out list))
+				{
+					list = new List<MethodInfo>();
+					methods.Add(method.Name, list);
+				}
+				list.Add(method);
+			}
+		}
+
+		static MethodInfo InferTypes(MethodInfo method, params object[] parameters)
+		{
+			if (method == null || parameters == null || method.GetParameters().Length != parameters.Length)
+				return null;
+			Type[] pars = parameters.Select(o => o != null ? o.GetType() : null).ToArray();
+			Dictionary<Type, Type> arguments = new Dictionary<Type, Type>();
+			foreach (var arg in method.GetGenericArguments())
+				arguments.Add(arg, null);
+			ParameterInfo[] info = method.GetParameters();
+			for (int i = 0; i < parameters.Length; ++i)
+			{
+				if (pars[i] == null)
+				{
+					if (!info[i].ParameterType.IsClass)
+						return null;
+				}
+				else if (!info[i].ParameterType.IsGenericType)
+				{
+					if (arguments.ContainsKey(info[i].ParameterType))
+					{
+						if (arguments[info[i].ParameterType] != null)
+						{
+							if (arguments[info[i].ParameterType] != pars[i])
+							{
+								if (pars[i].IsAssignableFrom(arguments[info[i].ParameterType]))
+									arguments[info[i].ParameterType] = pars[i];
+								else if (!arguments[info[i].ParameterType].IsAssignableFrom(pars[i]))
+									throw new Exception("Could not infer types for method \"" + method.Name + "\". Found conflicting generic arguments of type \"" + arguments[info[i].ParameterType] + "\" and \"" + pars[i] + "\".");
+							}
+						}
+						else
+							arguments[info[i].ParameterType] = pars[i];
+					}
+					else if (!info[i].ParameterType.IsAssignableFrom(pars[i]))
+						return null;
+				}
+				else
+				{
+					Type type = GetMatchingType(info[i].ParameterType, pars[i]);
+					if (type == null)
+						return null;
+					MatchTypes(arguments, info[i].ParameterType, type, method);
+				}
+			}
+			if (arguments.Any(kvp => kvp.Value == null))
+				return null;
+
+			try { method = method.MakeGenericMethod(arguments.Values.ToArray()); }
+			catch { throw new Exception("Failed to create generic method \"" + method.Name + "\" with the supplied generic arguments."); }
+
+			return method;
+		}
+
+		static void MatchTypes(Dictionary<Type, Type> arguments, Type genericType, Type type, MethodInfo method)
+		{
+			Type[] genericArgs = genericType.GetGenericArguments();
+			Type[] args = type.GetGenericArguments();
+			for (int i = 0; i < genericArgs.Length; ++i)
+			{
+				if (genericArgs[i].IsGenericType)
+					MatchTypes(arguments, genericArgs[i], args[i], method);
+				else if (arguments.ContainsKey(genericArgs[i]))
+				{
+					if (arguments[genericArgs[i]] != null)
+					{
+						if (arguments[genericArgs[i]] != args[i])
+						{
+							if (args[i].IsAssignableFrom(arguments[genericArgs[i]]))
+								arguments[genericArgs[i]] = args[i];
+							else if (!arguments[genericArgs[i]].IsAssignableFrom(args[i]))
+								throw new Exception("Could not infer types for method \"" + method.Name + "\". Found conflicting generic arguments of type \"" + arguments[genericArgs[i]] + "\" and \"" + args[i] + "\".");
+						}
+					}
+					else
+						arguments[genericArgs[i]] = args[i];
+				}
+			}
+		}
+
+		static Type GetMatchingType(Type genericType, Type type)
+		{
+			genericType = genericType.GetGenericTypeDefinition();
+			Type[] interfaces = type.GetInterfaces();
+			while (type != null)
+			{
+				if (type.IsGenericType && type.GetGenericTypeDefinition() == genericType)
+					return type;
+				type = type.BaseType;
+			}
+			foreach (Type inter in interfaces)
+			{
+				if (inter.IsGenericType && inter.GetGenericTypeDefinition() == genericType)
+					return inter;
+			}
+			return null;
+		}
+
+		internal static MethodInfo GetMethod(string methodName, List<Type> typeParams, object[] parameters)
+		{
+			MethodInfo method = null;
+			if (methods.Count == 0 || parameters[0] == null || !methods.ContainsKey(methodName))
+				return null;
+			Dictionary<Type, List<MethodInfo>> typeCache;
+			if (!methodCache.TryGetValue(methodName, out typeCache))
+			{
+				typeCache = new Dictionary<Type, List<MethodInfo>>();
+				methodCache.Add(methodName, typeCache);
+			}
+			List<MethodInfo> methodList;
+			if (!typeCache.TryGetValue(parameters[0].GetType(), out methodList))
+			{
+				methodList = new List<MethodInfo>();
+				typeCache.Add(parameters[0].GetType(), methodList);
+			}
+			Type[] paramTypes = parameters.Select(o => o != null ? o.GetType() : null).ToArray();
+			if (typeParams != null && typeParams.Count > 0)
+			{
+				for (int i = 0; i < methodList.Count; ++i)
+				{
+					if (methodList[i].IsGenericMethod && methodList[i].GetParameters().Length == paramTypes.Length)
+					{
+						var args = methodList[i].GetGenericArguments();
+						var param = methodList[i].GetParameters();
+						if (args.Length == typeParams.Count)
+						{
+							bool good = true;
+							for (int j = 0; j < args.Length; ++j)
+								good &= args[j] == typeParams[j];
+							for (int j = 0; j < paramTypes.Length; ++j)
+								good &= param[j].ParameterType.IsAssignableFrom(paramTypes[j]);
+							if (good)
+							{
+								method = methodList[i];
+								break;
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				for (int i = 0; i < methodList.Count; ++i)
+				{
+					var param = methodList[i].GetParameters();
+					bool good = true;
+					for (int j = 0; j < paramTypes.Length; ++j)
+						good &= param[j].ParameterType.IsAssignableFrom(paramTypes[j]);
+					if (good)
+					{
+						method = methodList[i];
+						break;
+					}
+				}
+			}
+			if (method == null)
+			{
+				foreach (MethodInfo meth in methods[methodName])
+				{
+					if (meth.IsGenericMethod)
+					{
+						if (typeParams != null && typeParams.Count > 0)
+						{
+							if (typeParams.Count == meth.GetGenericArguments().Length)
+							{
+								try { method = meth.MakeGenericMethod(typeParams.ToArray()); }
+								catch { method = null; }
+							}
+						}
+						else
+							method = InferTypes(meth, parameters);
+					}
+					else
+						method = meth;
+					if (method != null)
+					{
+						var param = method.GetParameters();
+						bool good = true;
+						for (int j = 0; j < paramTypes.Length; ++j)
+							good &= param[j].ParameterType.IsAssignableFrom(paramTypes[j]);
+						if (good)
+							break;
+						method = null;
+					}
+				}
+				if (method != null)
+					methodList.Add(method);
+			}
+			return method;
 		}
 
 		internal static bool TryGetType(string name, List<Type> typeParams, out Type type)

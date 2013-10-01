@@ -29,18 +29,33 @@ namespace QuickConverter.Tokens
 				List<Type> typeArgs = null;
 				if (temp.Length > 0 && temp[0] == '[')
 				{
+					string old = temp;
 					typeArgs = new List<Type>();
 					List<string> split;
 					if (TrySplitByCommas(ref temp, '[', ']', out split))
 					{
-						foreach (string str in split)
+						if (split.Count == 0)
 						{
-							Tuple<object, string> tuple = GetNameMatches(str.Trim(), null, null).FirstOrDefault(tp => tp.Item1 is Type && string.IsNullOrWhiteSpace(tp.Item2));
-							if (tuple == null)
-								yield break;
-							typeArgs.Add(tuple.Item1 as Type);
+							typeArgs = null;
+							val += "[]";
+						}
+						else
+						{
+							foreach (string str in split)
+							{
+								Tuple<object, string> tuple = GetNameMatches(str.Trim(), null, null).FirstOrDefault(tp => tp.Item1 is Type && string.IsNullOrWhiteSpace(tp.Item2));
+								if (tuple == null)
+								{
+									typeArgs = null;
+									temp = old;
+									break;
+								}
+								typeArgs.Add(tuple.Item1 as Type);
+							}
 						}
 					}
+					else
+						yield break;
 				}
 				bool more = temp.Length > 0 && temp[0] == '.';
 				if (parent == null)
@@ -81,6 +96,15 @@ namespace QuickConverter.Tokens
 						}
 						else if (info.MemberType == MemberTypes.Field || info.MemberType == MemberTypes.Property)
 							yield return new Tuple<object, string>(info, temp);
+						else if (info.MemberType == MemberTypes.NestedType)
+						{
+							yield return new Tuple<object, string>(info, temp);
+							if (temp.Length > 0 && temp[0] == '.')
+							{
+								foreach (var match in GetNameMatches(temp.Substring(1), val, info as Type))
+									yield return match;
+							}
+						}
 					}
 				}
 			}

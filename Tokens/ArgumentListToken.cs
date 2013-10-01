@@ -13,14 +13,7 @@ namespace QuickConverter.Tokens
 		private bool findAssignments;
 		private Type assignmentType;
 		private bool allowSubLists;
-		internal ArgumentListToken(char open, char close)
-		{
-			this.open = open;
-			this.close = close;
-			findAssignments = false;
-			assignmentType = null;
-			allowSubLists = false;
-		}
+		private bool allowTypeCasts;
 
 		internal ArgumentListToken(char open, char close, Type assignmentType)
 		{
@@ -29,15 +22,27 @@ namespace QuickConverter.Tokens
 			findAssignments = true;
 			this.assignmentType = assignmentType;
 			allowSubLists = false;
+			allowTypeCasts = false;
 		}
 
-		internal ArgumentListToken(char open, char close, bool allowSubLists)
+		internal ArgumentListToken(char open, char close, bool allowSubLists = false)
 		{
 			this.open = open;
 			this.close = close;
 			findAssignments = false;
 			assignmentType = null;
 			this.allowSubLists = allowSubLists;
+			allowTypeCasts = false;
+		}
+
+		internal ArgumentListToken(bool allowTypeCasts, char open, char close)
+		{
+			this.open = open;
+			this.close = close;
+			findAssignments = false;
+			assignmentType = null;
+			allowSubLists = false;
+			this.allowTypeCasts = allowTypeCasts;
 		}
 
 		internal List<TokenBase> Arguments { get; private set; }
@@ -67,6 +72,26 @@ namespace QuickConverter.Tokens
 						list.Add(newToken);
 					else
 						return false;
+				}
+				else if (allowTypeCasts)
+				{
+					if (new TypeCastToken(false).TryGetToken(ref s, out newToken))
+					{
+						string nameTemp = "$" + s;
+						TokenBase tokenTemp;
+						if (!new ParameterToken().TryGetToken(ref nameTemp, out tokenTemp))
+							return false;
+						(newToken as TypeCastToken).Target = tokenTemp;
+						list.Add(newToken);
+					}
+					else
+					{
+						string nameTemp = "$" + s;
+						TokenBase tokenTemp;
+						if (!new ParameterToken().TryGetToken(ref nameTemp, out tokenTemp))
+							return false;
+						list.Add(tokenTemp);
+					}
 				}
 				else
 				{

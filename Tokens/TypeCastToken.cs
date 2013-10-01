@@ -10,12 +10,14 @@ namespace QuickConverter.Tokens
 {
 	public class TypeCastToken : TokenBase
 	{
-		internal TypeCastToken()
+		internal TypeCastToken(bool parseTarget = true)
 		{
+			this.parseTarget = parseTarget;
 		}
 
-		private Type type;
-		private TokenBase target;
+		public Type TargetType { get; private set; }
+		public TokenBase Target { get; set; }
+		private bool parseTarget;
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
 			token = null;
@@ -48,18 +50,18 @@ namespace QuickConverter.Tokens
 				return false;
 
 			temp = text.Substring(i + 1).TrimStart();
-			TokenBase valToken;
-			if (!EquationTokenizer.TryGetValueToken(ref temp, out valToken))
+			TokenBase valToken = null;
+			if (parseTarget && !EquationTokenizer.TryGetValueToken(ref temp, out valToken))
 				return false;
 			text = temp;
-			token = new TypeCastToken() { type = tuple.Item1 as Type, target = valToken };
+			token = new TypeCastToken() { TargetType = tuple.Item1 as Type, Target = valToken };
 			return true;
 		}
 
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext)
 		{
-			CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, type, dynamicContext ?? typeof(object));
-			return Expression.Convert(Expression.Dynamic(binder, type, target.GetExpression(parameters, locals, dynamicContext)), typeof(object));
+			CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, TargetType, dynamicContext ?? typeof(object));
+			return Expression.Convert(Expression.Dynamic(binder, TargetType, Target.GetExpression(parameters, locals, dynamicContext)), typeof(object));
 		}
 	}
 }
