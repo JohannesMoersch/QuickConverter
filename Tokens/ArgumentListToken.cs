@@ -79,7 +79,7 @@ namespace QuickConverter.Tokens
 					{
 						string nameTemp = "$" + s;
 						TokenBase tokenTemp;
-						if (!new ParameterToken().TryGetToken(ref nameTemp, out tokenTemp))
+						if (!new ParameterToken().TryGetToken(ref nameTemp, out tokenTemp) || !String.IsNullOrWhiteSpace(nameTemp))
 							return false;
 						(newToken as TypeCastToken).Target = tokenTemp;
 						list.Add(newToken);

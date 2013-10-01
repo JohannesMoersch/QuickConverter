@@ -26,11 +26,11 @@ namespace QuickConverter.Tokens
 		{
 			token = null;
 			TokenBase arguments;
-			bool lambda = true;
-			if (!new ArgumentListToken(true, '(', ')').TryGetToken(ref text, out arguments))
+			bool lambda = false;
+			if (!new ArgumentListToken('(', ')', null).TryGetToken(ref text, out arguments))
 			{
-				lambda = false;
-				if (!new ArgumentListToken('(', ')', null).TryGetToken(ref text, out arguments))
+				lambda = true;
+				if (!new ArgumentListToken(true, '(', ')').TryGetToken(ref text, out arguments))
 					return false;
 			}
 			string temp = text.TrimStart();
