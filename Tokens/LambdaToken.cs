@@ -63,8 +63,19 @@ namespace QuickConverter.Tokens
 
 				List<ParameterExpression> parExps = new List<ParameterExpression>();
 				Expression exp = Value.GetExpression(parExps, subLocals, dynamicContext);
-				if (parExps.Any())
-					throw new Exception("Lambda expression contained unknown parameter or variable \"" + parExps.First().Name + "\".");
+
+				if (parExps.Count != 0)
+				{
+					foreach (ParameterExpression par in parExps)
+					{
+						if (!parameters.Any(p => p.Name == par.Name))
+							parameters.Add(par);
+						subLocals.Add(par.Name, Expression.Constant(new DataContainer()));
+					}
+					parExps.Clear();
+					exp = Value.GetExpression(parExps, subLocals, dynamicContext);
+				}
+
 				foreach (var tuple in pars)
 					parExps.Add(Expression.Parameter(tuple.Item2, tuple.Item1));
 
@@ -78,7 +89,9 @@ namespace QuickConverter.Tokens
 				MethodInfo method = typeof(Expression).GetMethods().FirstOrDefault(m => m.Name == "Lambda" && m.IsGenericMethod && m.GetParameters().Length == 2).MakeGenericMethod(type);
 				object func = ((dynamic)method.Invoke(null, new object[] { block, parExps.ToArray() })).Compile();
 				
-				return Expression.Constant(func);
+				Expression ret = Expression.Block(subLocals.Skip(parExps.Count).Select(kvp => Expression.Assign(Expression.Field(kvp.Value, "Value"), parameters.First(p => p.Name == kvp.Key)) as Expression).Concat(new [] { Expression.Constant(func) as Expression }));
+
+				return ret;
 			}
 			else
 			{
