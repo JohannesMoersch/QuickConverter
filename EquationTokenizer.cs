@@ -230,10 +230,10 @@ namespace QuickConverter
 			{
 				for (int i = 0; i < methodList.Count; ++i)
 				{
-					if (methodList[i].IsGenericMethod && methodList[i].GetParameters().Length == paramTypes.Length)
+					var param = methodList[i].GetParameters();
+					if (methodList[i].IsGenericMethod && param.Length == paramTypes.Length)
 					{
 						var args = methodList[i].GetGenericArguments();
-						var param = methodList[i].GetParameters();
 						if (args.Length == typeParams.Count)
 						{
 							bool good = true;
@@ -255,13 +255,16 @@ namespace QuickConverter
 				for (int i = 0; i < methodList.Count; ++i)
 				{
 					var param = methodList[i].GetParameters();
-					bool good = true;
-					for (int j = 0; j < paramTypes.Length; ++j)
-						good &= param[j].ParameterType.IsAssignableFrom(paramTypes[j]);
-					if (good)
+					if (param.Length == paramTypes.Length)
 					{
-						method = methodList[i];
-						break;
+						bool good = true;
+						for (int j = 0; j < paramTypes.Length; ++j)
+							good &= param[j].ParameterType.IsAssignableFrom(paramTypes[j]);
+						if (good)
+						{
+							method = methodList[i];
+							break;
+						}
 					}
 				}
 			}
@@ -287,11 +290,14 @@ namespace QuickConverter
 					if (method != null)
 					{
 						var param = method.GetParameters();
-						bool good = true;
-						for (int j = 0; j < paramTypes.Length; ++j)
-							good &= param[j].ParameterType.IsAssignableFrom(paramTypes[j]);
-						if (good)
-							break;
+						if (param.Length == paramTypes.Length)
+						{
+							bool good = true;
+							for (int j = 0; j < paramTypes.Length; ++j)
+								good &= param[j].ParameterType.IsAssignableFrom(paramTypes[j]);
+							if (good)
+								break;
+						}
 						method = null;
 					}
 				}
