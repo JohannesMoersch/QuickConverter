@@ -36,12 +36,13 @@ namespace QuickConverter.Tokens
 
 		private TokenBase left;
 		private TokenBase right;
-		private Operator operation;
+		internal Operator Operation { get; set; }
+
 		internal BinaryOperatorToken(TokenBase left, TokenBase right, Operator operation)
 		{
 			this.left = left;
 			this.right = right;
-			this.operation = operation;
+			this.Operation = operation;
 		}
 
 		internal override bool TryGetToken(ref string text, out TokenBase token)
@@ -51,11 +52,11 @@ namespace QuickConverter.Tokens
 
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext)
 		{
-			if (operation == Operator.And)
+			if (Operation == Operator.And)
 				return Expression.Convert(Expression.AndAlso(Expression.Convert(left.GetExpression(parameters, locals, dynamicContext), typeof(bool)), Expression.Convert(right.GetExpression(parameters, locals, dynamicContext), typeof(bool))), typeof(object));
-			if (operation == Operator.Or)
+			if (Operation == Operator.Or)
 				return Expression.Convert(Expression.OrElse(Expression.Convert(left.GetExpression(parameters, locals, dynamicContext), typeof(bool)), Expression.Convert(right.GetExpression(parameters, locals, dynamicContext), typeof(bool))), typeof(object));
-			CallSiteBinder binder = Binder.BinaryOperation(CSharpBinderFlags.None, types[(int)operation], dynamicContext ?? typeof(object), new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null), CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
+			CallSiteBinder binder = Binder.BinaryOperation(CSharpBinderFlags.None, types[(int)Operation], dynamicContext ?? typeof(object), new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null), CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
 			return Expression.Dynamic(binder, typeof(object), left.GetExpression(parameters, locals, dynamicContext), right.GetExpression(parameters, locals, dynamicContext));
 		}
 	}

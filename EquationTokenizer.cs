@@ -57,8 +57,24 @@ namespace QuickConverter
 			types.Add("float", typeof(float));
 			types.Add("double", typeof(double));
 			types.Add("decimal", typeof(decimal));
+			types.Add("char", typeof(char));
 			types.Add("string", typeof(string));
 			types.Add("object", typeof(object));
+			types.Add("bool[]", typeof(bool[]));
+			types.Add("byte[]", typeof(byte[]));
+			types.Add("sbyte[]", typeof(sbyte[]));
+			types.Add("short[]", typeof(short[]));
+			types.Add("ushort[]", typeof(ushort[]));
+			types.Add("int[]", typeof(int[]));
+			types.Add("uint[]", typeof(uint[]));
+			types.Add("long[]", typeof(long[]));
+			types.Add("ulong[]", typeof(ulong[]));
+			types.Add("float[]", typeof(float[]));
+			types.Add("double[]", typeof(double[]));
+			types.Add("decimal[]", typeof(decimal[]));
+			types.Add("char[]", typeof(char[]));
+			types.Add("string[]", typeof(string[]));
+			types.Add("object[]", typeof(object[]));
 		}
 
 		/// <summary>
@@ -438,7 +454,7 @@ namespace QuickConverter
 		{
 			TokenBase token;
 			if (!TryEvaluateExpression(expression, out token))
-				throw new Exception("Failed to tokenize expression \"" + expression + "\".");
+				throw new Exception("Failed to tokenize expression \"" + expression + "\". Did you forget a '$'?");
 			return token;
 		}
 	}

@@ -14,6 +14,8 @@ namespace QuickConverter.Tokens
 	{
 		private static Type[] funcTypes = new Type[] { typeof(Func<>), typeof(Func<,>), typeof(Func<,,>), typeof(Func<,,,>), typeof(Func<,,,,>), typeof(Func<,,,,,>), typeof(Func<,,,,,,>), typeof(Func<,,,,,,,>), typeof(Func<,,,,,,,,>), typeof(Func<,,,,,,,,,>), typeof(Func<,,,,,,,,,,>), typeof(Func<,,,,,,,,,,,>), typeof(Func<,,,,,,,,,,,,>), typeof(Func<,,,,,,,,,,,,,>), typeof(Func<,,,,,,,,,,,,,,,>), typeof(Func<,,,,,,,,,,,,,,,,>) };
 
+		private static Operator[] booleanOperators = new Operator[] { Operator.And, Operator.Or, Operator.Equals, Operator.NotEquals, Operator.GreaterThan, Operator.LessThan, Operator.GreaterOrEqual, Operator.LessOrEqual };
+
 		internal LambdaToken()
 		{
 		}
@@ -68,7 +70,7 @@ namespace QuickConverter.Tokens
 				{
 					foreach (ParameterExpression par in parExps)
 					{
-						if (!parameters.Any(p => p.Name == par.Name))
+						if (!(parameters.Any(p => p.Name == par.Name) || locals.Any(l => l.Key == par.Name)))
 							parameters.Add(par);
 						subLocals.Add(par.Name, Expression.Constant(new DataContainer()));
 					}
@@ -79,7 +81,11 @@ namespace QuickConverter.Tokens
 				foreach (var tuple in pars)
 					parExps.Add(Expression.Parameter(tuple.Item2, tuple.Item1));
 
-				Type targetType = (Value is TypeCastToken) ? (Value as TypeCastToken).TargetType : typeof(object);
+				Type targetType = typeof(object);
+				if (Value is TypeCastToken)
+					targetType = (Value as TypeCastToken).TargetType;
+				else if (Value is BinaryOperatorToken && booleanOperators.Contains((Value as BinaryOperatorToken).Operation))
+					targetType = typeof(bool);
 
 				CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, targetType, dynamicContext);
 
@@ -89,7 +95,7 @@ namespace QuickConverter.Tokens
 				MethodInfo method = typeof(Expression).GetMethods().FirstOrDefault(m => m.Name == "Lambda" && m.IsGenericMethod && m.GetParameters().Length == 2).MakeGenericMethod(type);
 				object func = ((dynamic)method.Invoke(null, new object[] { block, parExps.ToArray() })).Compile();
 				
-				Expression ret = Expression.Block(subLocals.Skip(parExps.Count).Select(kvp => Expression.Assign(Expression.Field(kvp.Value, "Value"), parameters.First(p => p.Name == kvp.Key)) as Expression).Concat(new [] { Expression.Constant(func) as Expression }));
+				Expression ret = Expression.Block(subLocals.Skip(parExps.Count).Select(kvp => Expression.Assign(Expression.Field(kvp.Value, "Value"), parameters.Select(p => new Tuple<string, Expression>(p.Name, p)).Concat(locals.Select(k => new Tuple<string, Expression>(k.Key, Expression.Field(k.Value, "Value")))).First(p => p.Item1 == kvp.Key).Item2)).Concat(new [] { Expression.Constant(func) as Expression }));
 
 				return ret;
 			}

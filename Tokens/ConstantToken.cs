@@ -26,7 +26,15 @@ namespace QuickConverter.Tokens
 					++count;
 				if (count > text.Length)
 					return false;
-				token = new ConstantToken() { value = text.Substring(1, count - 1) };
+				if (text.Length > count + 1 && text[count + 1] == 'c')
+				{
+					if (count > 2)
+						throw new Exception("The string '" + text.Substring(1, count - 1) + "' can not be interpreted as a character.");
+					token = new ConstantToken() { value = text[1] };
+					++count;
+				}
+				else
+					token = new ConstantToken() { value = text.Substring(1, count - 1) };
 				text = text.Substring(count + 1);
 				return true;
 			}
