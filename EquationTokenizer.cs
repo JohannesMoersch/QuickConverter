@@ -154,7 +154,7 @@ namespace QuickConverter
 								if (pars[i].IsAssignableFrom(arguments[info[i].ParameterType]))
 									arguments[info[i].ParameterType] = pars[i];
 								else if (!arguments[info[i].ParameterType].IsAssignableFrom(pars[i]))
-									throw new Exception("Could not infer types for method \"" + method.Name + "\". Found conflicting generic arguments of type \"" + arguments[info[i].ParameterType] + "\" and \"" + pars[i] + "\".");
+									return null;
 							}
 						}
 						else
@@ -166,28 +166,27 @@ namespace QuickConverter
 				else
 				{
 					Type type = GetMatchingType(info[i].ParameterType, pars[i]);
-					if (type == null)
+					if (type == null || !MatchTypes(arguments, info[i].ParameterType, type, method))
 						return null;
-					MatchTypes(arguments, info[i].ParameterType, type, method);
 				}
 			}
 			if (arguments.Any(kvp => kvp.Value == null))
 				return null;
 
 			try { method = method.MakeGenericMethod(arguments.Values.ToArray()); }
-			catch { throw new Exception("Failed to create generic method \"" + method.Name + "\" with the supplied generic arguments."); }
+			catch { return null; }
 
 			return method;
 		}
 
-		static void MatchTypes(Dictionary<Type, Type> arguments, Type genericType, Type type, MethodInfo method)
+		static bool MatchTypes(Dictionary<Type, Type> arguments, Type genericType, Type type, MethodInfo method)
 		{
 			Type[] genericArgs = genericType.GetGenericArguments();
 			Type[] args = type.GetGenericArguments();
 			for (int i = 0; i < genericArgs.Length; ++i)
 			{
-				if (genericArgs[i].IsGenericType)
-					MatchTypes(arguments, genericArgs[i], args[i], method);
+				if (genericArgs[i].IsGenericType && !MatchTypes(arguments, genericArgs[i], args[i], method))
+					return false;
 				else if (arguments.ContainsKey(genericArgs[i]))
 				{
 					if (arguments[genericArgs[i]] != null)
@@ -197,13 +196,14 @@ namespace QuickConverter
 							if (args[i].IsAssignableFrom(arguments[genericArgs[i]]))
 								arguments[genericArgs[i]] = args[i];
 							else if (!arguments[genericArgs[i]].IsAssignableFrom(args[i]))
-								throw new Exception("Could not infer types for method \"" + method.Name + "\". Found conflicting generic arguments of type \"" + arguments[genericArgs[i]] + "\" and \"" + args[i] + "\".");
+								return false;
 						}
 					}
 					else
 						arguments[genericArgs[i]] = args[i];
 				}
 			}
+			return true;
 		}
 
 		static Type GetMatchingType(Type genericType, Type type)
