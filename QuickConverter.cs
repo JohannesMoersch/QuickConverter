@@ -132,11 +132,11 @@ namespace QuickConverter
 
 			object[] toVals = null;
 			if (toFunc != null)
-				toVals = toFunc.Item2.Select(str => typeof(Binding).GetProperty(str).GetValue(this, null)).ToArray();
+				toVals = toFunc.Item2.Select(str => typeof(QuickConverter).GetProperty(str).GetValue(this, null)).ToArray();
 
 			object[] fromVals = null;
 			if (fromFunc != null)
-				fromVals = fromFunc.Item2.Select(str => typeof(Binding).GetProperty(str).GetValue(this, null)).ToArray();
+				fromVals = fromFunc.Item2.Select(str => typeof(QuickConverter).GetProperty(str).GetValue(this, null)).ToArray();
 
 			return new DynamicSingleConverter(toFunc != null ? toFunc.Item1 : null, fromFunc != null ? fromFunc.Item1 : null, toVals, fromVals);
 		}
