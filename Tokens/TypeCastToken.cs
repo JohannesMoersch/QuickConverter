@@ -60,7 +60,7 @@ namespace QuickConverter.Tokens
 
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext)
 		{
-			CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, TargetType, dynamicContext ?? typeof(object));
+			CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.ConvertExplicit, TargetType, dynamicContext ?? typeof(object));
 			return Expression.Convert(Expression.Dynamic(binder, TargetType, Target.GetExpression(parameters, locals, dynamicContext)), typeof(object));
 		}
 	}

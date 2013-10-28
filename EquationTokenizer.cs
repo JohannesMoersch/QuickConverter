@@ -336,11 +336,10 @@ namespace QuickConverter
 				}
 				return type != null;
 			}
-			if (name.Contains('.'))
-				type = assemblies.Select(s => Type.GetType(name + ", " + s)).FirstOrDefault(t => t != null);
-			else
+			type = assemblies.Select(s => Type.GetType(name + ", " + s)).FirstOrDefault(t => t != null);
+			if (type == null)
 			{
-				Type[] matches = namespaces.Select(str => Type.GetType(str.Item1 + "." + name + ", " + str.Item2)).Where(t => t != null).ToArray();
+				Type[] matches = namespaces.Select(str => Type.GetType(str.Item1 + "." + name.Replace('.', '+') + ", " + str.Item2)).Where(t => t != null).ToArray();
 				if (matches.Length > 1)
 					throw new Exception("Ambiguous type found. Could not choose between " + matches.Select(t => t.FullName).Aggregate((s1, s2) => s1 + " and " + s2) + ".");
 				if (matches.Length != 0)
