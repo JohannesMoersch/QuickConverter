@@ -12,16 +12,21 @@ namespace QuickConverter
 	{
 		private static Dictionary<Type, Func<object, object>> castFunctions = new Dictionary<Type, Func<object, object>>();
 
+		public string ConvertExpression { get; private set; }
+		public string ConvertBackExpression { get; private set; }
+
 		private Func<object, object[], object> _converter;
 		private Func<object, object[], object> _convertBack;
 		private object[] _toValues;
 		private object[] _fromValues;
-		public DynamicSingleConverter(Func<object, object[], object> converter, Func<object, object[], object> convertBack, object[] toValues, object[] fromValues)
+		public DynamicSingleConverter(Func<object, object[], object> converter, Func<object, object[], object> convertBack, object[] toValues, object[] fromValues, string convertExp, string convertBackExp)
 		{
 			_converter = converter;
 			_convertBack = convertBack;
 			_toValues = toValues;
 			_fromValues = fromValues;
+			ConvertExpression = convertExp;
+			ConvertBackExpression = convertBackExp;
 		}
 
 		private object DoConversion(object value, Type targetType, Func<object, object[], object> func, object[] values)

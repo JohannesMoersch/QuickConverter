@@ -147,7 +147,7 @@ namespace QuickConverter
 				holder.Bindings.Add(typeof(MultiBinding).GetProperty(name).GetValue(this, null) as BindingBase);
 
 			var vals = func.Item3.Select(str => typeof(MultiBinding).GetProperty(str).GetValue(this, null)).ToArray();
-			holder.Converter = new DynamicMultiConverter(func.Item1, vals);
+			holder.Converter = new DynamicMultiConverter(func.Item1, vals, Converter);
 
 			return getExpression ? holder.ProvideValue(serviceProvider) : holder;
 		}

@@ -138,7 +138,7 @@ namespace QuickConverter
 			if (fromFunc != null)
 				fromVals = fromFunc.Item2.Select(str => typeof(QuickConverter).GetProperty(str).GetValue(this, null)).ToArray();
 
-			return new DynamicSingleConverter(toFunc != null ? toFunc.Item1 : null, fromFunc != null ? fromFunc.Item1 : null, toVals, fromVals);
+			return new DynamicSingleConverter(toFunc != null ? toFunc.Item1 : null, fromFunc != null ? fromFunc.Item1 : null, toVals, fromVals, Convert, ConvertBack);
 		}
 	}
 }

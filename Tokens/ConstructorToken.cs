@@ -17,6 +17,7 @@ namespace QuickConverter.Tokens
 		}
 
 		private Type arrayType;
+		private Type conType;
 		private ConstructorInfo constructor;
 		private ArgumentListToken arguments;
 		private ArgumentListToken initializers; // Allow non-assignments for arrays and ICollection<>
@@ -56,24 +57,27 @@ namespace QuickConverter.Tokens
 			{
 				if (!new ArgumentListToken('(', ')').TryGetToken(ref temp, out args))
 					return false;
-				cons = type.GetConstructors().Where(info => info.GetParameters().Length == (args as ArgumentListToken).Arguments.Count).ToList();
-				for (int i = cons.Count - 1; i >= 0; --i)
+				if ((args as ArgumentListToken).Arguments.Count > 0 || type.IsClass)
 				{
-					for (int j = 0; j < (args as ArgumentListToken).Arguments.Count; ++j)
+					cons = type.GetConstructors().Where(info => info.GetParameters().Length == (args as ArgumentListToken).Arguments.Count).ToList();
+					for (int i = cons.Count - 1; i >= 0; --i)
 					{
-						TypeCastToken cast = (args as ArgumentListToken).Arguments[j] as TypeCastToken;
-						if (cast != null && !cons[i].GetParameters()[j].ParameterType.IsAssignableFrom(cast.TargetType))
+						for (int j = 0; j < (args as ArgumentListToken).Arguments.Count; ++j)
 						{
-							cons.RemoveAt(j);
-							break;
+							TypeCastToken cast = (args as ArgumentListToken).Arguments[j] as TypeCastToken;
+							if (cast != null && !cons[i].GetParameters()[j].ParameterType.IsAssignableFrom(cast.TargetType))
+							{
+								cons.RemoveAt(j);
+								break;
+							}
 						}
 					}
+
+					if (cons.Count > 1)
+						throw new Exception("Ambiguous constructor call with " + (args as ArgumentListToken).Arguments.Count + " parameter(s) found for type " + type.FullName + ". Try using type casts to disambiguate the call.");
+					if (cons.Count == 0)
+						return false;
 				}
-				
-				if (cons.Count > 1)
-					throw new Exception("Ambiguous constructor call with " + (args as ArgumentListToken).Arguments.Count + " parameter(s) found for type " + type.FullName + ". Try using type casts to disambiguate the call.");
-				if (cons.Count == 0)
-					return false;
 			}
 
 			Type genericType = null;
@@ -105,9 +109,9 @@ namespace QuickConverter.Tokens
 				token = new ConstructorToken() { arguments = args as ArgumentListToken, arrayType = type, initializers = inits as ArgumentListToken };
 			}
 			else if (genericType != null)
-				token = new ConstructorToken() { arguments = args as ArgumentListToken, arrayType = genericType.GetGenericArguments()[0], constructor = cons[0], initializers = inits as ArgumentListToken };
+				token = new ConstructorToken() { arguments = args as ArgumentListToken, arrayType = genericType.GetGenericArguments()[0], constructor = cons != null ? cons[0] : null, conType = type, initializers = inits as ArgumentListToken };
 			else
-				token = new ConstructorToken() { arguments = args as ArgumentListToken, constructor = cons[0], initializers = inits as ArgumentListToken };
+				token = new ConstructorToken() { arguments = args as ArgumentListToken, constructor = cons != null ? cons[0] : null, conType = type, initializers = inits as ArgumentListToken };
 			text = temp;
 			return true;
 		}
@@ -140,16 +144,20 @@ namespace QuickConverter.Tokens
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext)
 		{
 			Expression exp;
-			if (constructor != null)
+			if (conType != null)
 			{
-				ParameterInfo[] info = constructor.GetParameters();
-				List<Expression> args = new List<Expression>();
-				for (int i = 0; i < info.Length; ++i)
-					args.Add(Expression.Dynamic(Binder.Convert(CSharpBinderFlags.None, info[i].ParameterType, dynamicContext ?? typeof(object)), info[i].ParameterType, arguments.Arguments[i].GetExpression(parameters, locals, dynamicContext)));
-				exp = Expression.New(constructor, args);
+				if (constructor != null)
+				{
+					ParameterInfo[] info = constructor.GetParameters();
+					List<Expression> args = new List<Expression>();
+					for (int i = 0; i < info.Length; ++i)
+						args.Add(Expression.Dynamic(Binder.Convert(CSharpBinderFlags.None, info[i].ParameterType, dynamicContext ?? typeof(object)), info[i].ParameterType, arguments.Arguments[i].GetExpression(parameters, locals, dynamicContext)));
+					exp = Expression.New(constructor, args);
+				}
+				else
+					exp = Expression.New(conType);
 				if (initializers != null)
 				{
-					args.Clear();
 					if (initializers.Arguments.Any(token => token is AssignmentToken))
 					{
 						Func<MemberInfo, Type> getType = mem => mem is FieldInfo ? (mem as FieldInfo).FieldType : (mem as PropertyInfo).PropertyType;

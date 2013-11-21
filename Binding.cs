@@ -130,7 +130,7 @@ namespace QuickConverter
 
 			var holder = new System.Windows.Data.MultiBinding() { Mode = P.Mode, UpdateSourceTrigger = P.UpdateSourceTrigger };
 			holder.Bindings.Add(P);
-			holder.Converter = new DynamicConverter(toFunc != null ? toFunc.Item1 : null, fromFunc != null ? fromFunc.Item1 : null, toVals, fromVals);
+			holder.Converter = new DynamicConverter(toFunc != null ? toFunc.Item1 : null, fromFunc != null ? fromFunc.Item1 : null, toVals, fromVals, Convert, ConvertBack);
 
 			return getExpression ? holder.ProvideValue(serviceProvider) : holder;
 		}

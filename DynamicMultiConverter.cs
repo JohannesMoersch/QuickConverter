@@ -12,13 +12,16 @@ namespace QuickConverter
 	{
 		private static Dictionary<Type, Func<object, object>> castFunctions = new Dictionary<Type, Func<object, object>>();
 
+		public string ConvertExpression { get; private set; }
+
 		private Func<object[], object[], object> _converter;
 		private object[] _values;
 
-		public DynamicMultiConverter(Func<object[], object[], object> converter, object[] values)
+		public DynamicMultiConverter(Func<object[], object[], object> converter, object[] values, string convertExp)
 		{
 			_converter = converter;
 			_values = values;
+			ConvertExpression = convertExp;
 		}
 
 		public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
