@@ -52,6 +52,7 @@
     <Compile Include="Tokens\ArgumentListToken.cs" />
     <Compile Include="Tokens\ArrayAccessToken.cs" />
     <Compile Include="Tokens\AssignmentToken.cs" />
+    <Compile Include="Tokens\AsToken.cs" />
     <Compile Include="Tokens\BinaryOperatorToken.cs" />
     <Compile Include="Tokens\BracketedToken.cs" />
     <Compile Include="Tokens\ConstantToken.cs" />

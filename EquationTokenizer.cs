@@ -43,7 +43,8 @@ namespace QuickConverter
 					new InstanceFunctionToken(),
 					new InstanceMemberToken(),
 					new ArrayAccessToken(),
-					new IsToken()
+					new IsToken(),
+					new AsToken()
 				};
 			types.Add("bool", typeof(bool));
 			types.Add("byte", typeof(byte));
@@ -256,7 +257,7 @@ namespace QuickConverter
 							for (int j = 0; j < args.Length; ++j)
 								good &= args[j] == typeParams[j];
 							for (int j = 0; j < paramTypes.Length; ++j)
-								good &= param[j].ParameterType.IsAssignableFrom(paramTypes[j]);
+								good &= param[j].ParameterType.IsAssignableFrom(paramTypes[j]) || (param[j].ParameterType.IsClass && paramTypes[j] == null);
 							if (good)
 							{
 								method = methodList[i];
@@ -275,7 +276,7 @@ namespace QuickConverter
 					{
 						bool good = true;
 						for (int j = 0; j < paramTypes.Length; ++j)
-							good &= param[j].ParameterType.IsAssignableFrom(paramTypes[j]);
+							good &= param[j].ParameterType.IsAssignableFrom(paramTypes[j]) || (param[j].ParameterType.IsClass && paramTypes[j] == null);
 						if (good)
 						{
 							method = methodList[i];
@@ -310,7 +311,7 @@ namespace QuickConverter
 						{
 							bool good = true;
 							for (int j = 0; j < paramTypes.Length; ++j)
-								good &= param[j].ParameterType.IsAssignableFrom(paramTypes[j]);
+								good &= param[j].ParameterType.IsAssignableFrom(paramTypes[j]) || (param[j].ParameterType.IsClass && paramTypes[j] == null);
 							if (good)
 								break;
 						}
