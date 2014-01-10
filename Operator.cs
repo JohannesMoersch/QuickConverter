@@ -22,10 +22,12 @@ namespace QuickConverter
 		Equals = 12,
 		NotEquals = 13,
 		And = 14,
-		Or = 15,
-		BitwiseAnd = 16,
-		BitwiseOr = 17,
-		BitwiseXor = 18,
-		Ternary = 19
+		AlternateAnd = 15,
+		Or = 16,
+		BitwiseAnd = 17,
+		BitwiseAlternateAnd = 18,
+		BitwiseOr = 19,
+		BitwiseXor = 20,
+		Ternary = 21
 	}
 }

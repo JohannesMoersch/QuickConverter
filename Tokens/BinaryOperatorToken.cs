@@ -27,7 +27,9 @@ namespace QuickConverter.Tokens
 			ExpressionType.Equal,
 			ExpressionType.NotEqual,
 			ExpressionType.AndAlso,
+			ExpressionType.AndAlso,
 			ExpressionType.OrElse,
+			ExpressionType.And,
 			ExpressionType.And,
 			ExpressionType.Or,
 			ExpressionType.ExclusiveOr,
@@ -52,7 +54,7 @@ namespace QuickConverter.Tokens
 
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext)
 		{
-			if (Operation == Operator.And)
+			if (Operation == Operator.And || Operation == Operator.AlternateAnd)
 				return Expression.Convert(Expression.AndAlso(Expression.Convert(left.GetExpression(parameters, locals, dynamicContext), typeof(bool)), Expression.Convert(right.GetExpression(parameters, locals, dynamicContext), typeof(bool))), typeof(object));
 			if (Operation == Operator.Or)
 				return Expression.Convert(Expression.OrElse(Expression.Convert(left.GetExpression(parameters, locals, dynamicContext), typeof(bool)), Expression.Convert(right.GetExpression(parameters, locals, dynamicContext), typeof(bool))), typeof(object));

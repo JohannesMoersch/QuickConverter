@@ -14,7 +14,7 @@ namespace QuickConverter.Tokens
 	{
 		private static Type[] funcTypes = new Type[] { typeof(Func<>), typeof(Func<,>), typeof(Func<,,>), typeof(Func<,,,>), typeof(Func<,,,,>), typeof(Func<,,,,,>), typeof(Func<,,,,,,>), typeof(Func<,,,,,,,>), typeof(Func<,,,,,,,,>), typeof(Func<,,,,,,,,,>), typeof(Func<,,,,,,,,,,>), typeof(Func<,,,,,,,,,,,>), typeof(Func<,,,,,,,,,,,,>), typeof(Func<,,,,,,,,,,,,,>), typeof(Func<,,,,,,,,,,,,,,,>), typeof(Func<,,,,,,,,,,,,,,,,>) };
 
-		private static Operator[] booleanOperators = new Operator[] { Operator.And, Operator.Or, Operator.Equals, Operator.NotEquals, Operator.GreaterThan, Operator.LessThan, Operator.GreaterOrEqual, Operator.LessOrEqual };
+		private static Operator[] booleanOperators = new Operator[] { Operator.And, Operator.AlternateAnd, Operator.Or, Operator.Equals, Operator.NotEquals, Operator.GreaterThan, Operator.LessThan, Operator.GreaterOrEqual, Operator.LessOrEqual };
 
 		internal LambdaToken()
 		{
