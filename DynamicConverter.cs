@@ -48,7 +48,7 @@ namespace QuickConverter
 			if (!castFunctions.TryGetValue(targetType, out cast))
 			{
 				ParameterExpression par = Expression.Parameter(typeof(object));
-				cast = Expression.Lambda<Func<object, object>>(Expression.Convert(Expression.Dynamic(Binder.Convert(CSharpBinderFlags.None, targetType, typeof(object)), targetType, par), typeof(object)), par).Compile();
+				cast = Expression.Lambda<Func<object, object>>(Expression.Convert(Expression.Dynamic(Binder.Convert(CSharpBinderFlags.ConvertExplicit, targetType, typeof(object)), targetType, par), typeof(object)), par).Compile();
 				castFunctions.Add(targetType, cast);
 			}
 
