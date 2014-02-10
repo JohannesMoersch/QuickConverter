@@ -13,6 +13,7 @@ namespace QuickConverter
 		private static Dictionary<Type, Func<object, object>> castFunctions = new Dictionary<Type, Func<object, object>>();
 
 		public string ConvertExpression { get; private set; }
+		public Exception LastException { get; private set; }
 
 		private Func<object[], object[], object> _converter;
 		private object[] _values;
@@ -28,7 +29,11 @@ namespace QuickConverter
 		{
 			object result;
 			try { result = _converter(values, _values); }
-			catch { return null; }
+			catch (Exception e)
+			{
+				LastException = e;
+				return null;
+			}
 
 			if (result == null)
 				return null;

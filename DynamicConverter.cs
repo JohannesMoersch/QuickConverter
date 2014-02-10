@@ -14,6 +14,7 @@ namespace QuickConverter
 
 		public string ConvertExpression { get; private set; }
 		public string ConvertBackExpression { get; private set; }
+		public Exception LastException { get; private set; }
 
 		private Func<object, object[], object> _converter;
 		private Func<object, object[], object> _convertBack;
@@ -35,7 +36,11 @@ namespace QuickConverter
 			if (func != null)
 			{
 				try { result = func(result, values); }
-				catch { return null; }
+				catch (Exception e)
+				{
+					LastException = e;
+					return null;
+				}
 			}
 
 			if (result == null)
