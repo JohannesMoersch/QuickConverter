@@ -34,6 +34,12 @@ namespace QuickConverter
 		public object V9 { get; set; }
 
 		/// <summary>
+		/// The converter will return DependencyObject.Unset during conversion if P is not of this type.
+		/// Both QuickConverter syntax (as a string) and Type objects are valid. 
+		/// </summary>
+		public object PType { get; set; }
+
+		/// <summary>
 		/// The expression to use for converting data from the source.
 		/// </summary>
 		public string Convert { get; set; }
@@ -99,6 +105,23 @@ namespace QuickConverter
 			return Expression.Call(Expression.Constant(lambda.Item1, lambda.Item1.GetType()), lambda.Item1.GetType().GetMethod("Invoke"), arguments);
 		}
 
+		internal static Type GetType(object pType)
+		{
+			if (pType == null)
+				return null;
+			if (pType is Type)
+				return pType as Type;
+			if (pType is string)
+			{
+				string type = "typeof(" + pType + ")";
+				Tokens.TokenBase token;
+				if (!new Tokens.TypeofToken().TryGetToken(ref type, out token))
+					throw new Exception("\"" + pType + "\" is not a valid type.");
+				return (token as Tokens.TypeofToken).Type;
+			}
+			throw new Exception("PType must be either string or a Type.");
+		}
+
 		public override object ProvideValue(IServiceProvider serviceProvider)
 		{
 			ParameterExpression inputP, inputV, value;
@@ -138,7 +161,7 @@ namespace QuickConverter
 			if (fromFunc != null)
 				fromVals = fromFunc.Item2.Select(str => typeof(QuickConverter).GetProperty(str).GetValue(this, null)).ToArray();
 
-			return new DynamicSingleConverter(toFunc != null ? toFunc.Item1 : null, fromFunc != null ? fromFunc.Item1 : null, toVals, fromVals, Convert, ConvertBack);
+			return new DynamicSingleConverter(toFunc != null ? toFunc.Item1 : null, fromFunc != null ? fromFunc.Item1 : null, toVals, fromVals, Convert, ConvertBack, GetType(PType));
 		}
 	}
 }

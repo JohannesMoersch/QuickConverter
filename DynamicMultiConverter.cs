@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using System.Windows;
 using System.Windows.Data;
 using Microsoft.CSharp.RuntimeBinder;
+using Expression = System.Linq.Expressions.Expression;
 
 namespace QuickConverter
 {
@@ -15,18 +17,35 @@ namespace QuickConverter
 		public string ConvertExpression { get; private set; }
 		public Exception LastException { get; private set; }
 
+		public Type[] PTypes { get; private set; }
+
 		private Func<object[], object[], object> _converter;
 		private object[] _values;
 
-		public DynamicMultiConverter(Func<object[], object[], object> converter, object[] values, string convertExp)
+		public DynamicMultiConverter(Func<object[], object[], object> converter, object[] values, string convertExp, Type[] pTypes)
 		{
 			_converter = converter;
 			_values = values;
 			ConvertExpression = convertExp;
+			PTypes = pTypes;
 		}
 
 		public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
 		{
+			for (int i = 0; i < values.Length; ++i)
+			{
+				if (PTypes[i] != null)
+				{
+					if (values[i] != null)
+					{
+						if (!PTypes[i].IsInstanceOfType(values[i]))
+							return DependencyProperty.UnsetValue;
+					}
+					else if (PTypes[i].IsValueType)
+						return DependencyProperty.UnsetValue;
+				}
+			}
+
 			object result;
 			try { result = _converter(values, _values); }
 			catch (Exception e)

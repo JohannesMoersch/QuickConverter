@@ -15,6 +15,7 @@ namespace QuickConverter.Tokens
 		}
 
 		private Type type;
+		public Type Type { get { return type; } }
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
 			token = null;

@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using System.Windows;
 using System.Windows.Data;
 using Microsoft.CSharp.RuntimeBinder;
+using Expression = System.Linq.Expressions.Expression;
 
 namespace QuickConverter
 {
@@ -16,11 +18,13 @@ namespace QuickConverter
 		public string ConvertBackExpression { get; private set; }
 		public Exception LastException { get; private set; }
 
+		public Type PType { get; private set; }
+
 		private Func<object, object[], object> _converter;
 		private Func<object, object[], object> _convertBack;
 		private object[] _toValues;
 		private object[] _fromValues;
-		public DynamicSingleConverter(Func<object, object[], object> converter, Func<object, object[], object> convertBack, object[] toValues, object[] fromValues, string convertExp, string convertBackExp)
+		public DynamicSingleConverter(Func<object, object[], object> converter, Func<object, object[], object> convertBack, object[] toValues, object[] fromValues, string convertExp, string convertBackExp, Type pType)
 		{
 			_converter = converter;
 			_convertBack = convertBack;
@@ -28,10 +32,22 @@ namespace QuickConverter
 			_fromValues = fromValues;
 			ConvertExpression = convertExp;
 			ConvertBackExpression = convertBackExp;
+			PType = pType;
 		}
 
 		private object DoConversion(object value, Type targetType, Func<object, object[], object> func, object[] values)
 		{
+			if (PType != null)
+			{
+				if (value != null)
+				{
+					if (!PType.IsInstanceOfType(value))
+						return DependencyProperty.UnsetValue;
+				}
+				else if (PType.IsValueType)
+					return DependencyProperty.UnsetValue;
+			}
+
 			object result = value;
 			if (func != null)
 			{

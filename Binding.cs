@@ -5,7 +5,6 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Data;
 using System.Windows.Markup;
 using System.Xaml;
@@ -43,6 +42,12 @@ namespace QuickConverter
 		public object V8 { get; set; }
 		/// <summary>Creates a constant parameter. This can be accessed inside the converter as $V9.</summary>
 		public object V9 { get; set; }
+
+		/// <summary>
+		/// The converter will return DependencyObject.Unset during conversion if P is not of this type.
+		/// Both QuickConverter syntax (as a string) and Type objects are valid. 
+		/// </summary>
+		public object PType { get; set; }
 
 		/// <summary>
 		/// The expression to use for converting data from the source.
@@ -130,7 +135,7 @@ namespace QuickConverter
 
 			var holder = new System.Windows.Data.MultiBinding() { Mode = P.Mode, UpdateSourceTrigger = P.UpdateSourceTrigger };
 			holder.Bindings.Add(P);
-			holder.Converter = new DynamicConverter(toFunc != null ? toFunc.Item1 : null, fromFunc != null ? fromFunc.Item1 : null, toVals, fromVals, Convert, ConvertBack);
+			holder.Converter = new DynamicConverter(toFunc != null ? toFunc.Item1 : null, fromFunc != null ? fromFunc.Item1 : null, toVals, fromVals, Convert, ConvertBack, QuickConverter.GetType(PType));
 
 			return getExpression ? holder.ProvideValue(serviceProvider) : holder;
 		}
