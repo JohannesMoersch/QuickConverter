@@ -48,7 +48,6 @@
   <ItemGroup>
     <Compile Include="Binding.cs" />
     <Compile Include="DataContainer.cs" />
-    <Compile Include="DynamicConverter.cs" />
     <Compile Include="DynamicMultiConverter.cs" />
     <Compile Include="DynamicSingleConverter.cs" />
     <Compile Include="EquationTokenizer.cs" />

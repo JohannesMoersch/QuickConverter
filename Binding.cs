@@ -133,11 +133,9 @@ namespace QuickConverter
 			if (fromFunc != null)
 				fromVals = fromFunc.Item2.Select(str => typeof(Binding).GetProperty(str).GetValue(this, null)).ToArray();
 
-			var holder = new System.Windows.Data.MultiBinding() { Mode = P.Mode, UpdateSourceTrigger = P.UpdateSourceTrigger };
-			holder.Bindings.Add(P);
-			holder.Converter = new DynamicConverter(toFunc != null ? toFunc.Item1 : null, fromFunc != null ? fromFunc.Item1 : null, toVals, fromVals, Convert, ConvertBack, QuickConverter.GetType(PType));
+			P.Converter = new DynamicSingleConverter(toFunc != null ? toFunc.Item1 : null, fromFunc != null ? fromFunc.Item1 : null, toVals, fromVals, Convert, ConvertBack, QuickConverter.GetType(PType));
 
-			return getExpression ? holder.ProvideValue(serviceProvider) : holder;
+			return getExpression ? P.ProvideValue(serviceProvider) : P;
 		}
 	}
 }

@@ -19,6 +19,8 @@ namespace QuickConverter
 
 		public Type[] PTypes { get; private set; }
 
+		public object[] ToValues { get { return _values; } }
+
 		private Func<object[], object[], object> _converter;
 		private object[] _values;
 

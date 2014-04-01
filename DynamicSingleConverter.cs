@@ -20,6 +20,9 @@ namespace QuickConverter
 
 		public Type PType { get; private set; }
 
+		public object[] ToValues { get { return _toValues; } }
+		public object[] FromValues { get { return _fromValues; } }
+
 		private Func<object, object[], object> _converter;
 		private Func<object, object[], object> _convertBack;
 		private object[] _toValues;
@@ -35,9 +38,9 @@ namespace QuickConverter
 			PType = pType;
 		}
 
-		private object DoConversion(object value, Type targetType, Func<object, object[], object> func, object[] values)
+		private object DoConversion(object value, Type targetType, Func<object, object[], object> func, object[] values, bool enforceType)
 		{
-			if (PType != null)
+			if (enforceType && PType != null)
 			{
 				if (value != null)
 				{
@@ -79,12 +82,12 @@ namespace QuickConverter
 
 		public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
 		{
-			return DoConversion(value, targetType, _converter, _toValues);
+			return DoConversion(value, targetType, _converter, _toValues, true);
 		}
 
 		public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
 		{
-			return DoConversion(value, targetType, _convertBack, _fromValues);
+			return DoConversion(value, targetType, _convertBack, _fromValues, false);
 		}
 	}
 }
