@@ -36,16 +36,8 @@ namespace QuickConverter
 		{
 			for (int i = 0; i < values.Length; ++i)
 			{
-				if (PTypes[i] != null)
-				{
-					if (values[i] != null)
-					{
-						if (!PTypes[i].IsInstanceOfType(values[i]))
-							return DependencyProperty.UnsetValue;
-					}
-					else if (PTypes[i].IsValueType)
-						return DependencyProperty.UnsetValue;
-				}
+				if (PTypes[i] != null && !PTypes[i].IsInstanceOfType(values[i]))
+					return DependencyProperty.UnsetValue;
 			}
 
 			object result;

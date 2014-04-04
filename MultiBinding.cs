@@ -164,23 +164,15 @@ namespace QuickConverter
 
 			var holder = new System.Windows.Data.MultiBinding() { Mode = BindingMode.OneWay };
 
+			List<object> pTypes = new List<object>();
 			foreach (string name in func.Item2)
+			{
 				holder.Bindings.Add(typeof(MultiBinding).GetProperty(name).GetValue(this, null) as BindingBase);
+				pTypes.Add(typeof(MultiBinding).GetProperty(name + "Type").GetValue(this, null));
+			}
 
 			var vals = func.Item3.Select(str => typeof(MultiBinding).GetProperty(str).GetValue(this, null)).ToArray();
-			holder.Converter = new DynamicMultiConverter(func.Item1, vals, Converter, new[] 
-			{ 
-				QuickConverter.GetType(P0Type),
-				QuickConverter.GetType(P1Type),
-				QuickConverter.GetType(P2Type),
-				QuickConverter.GetType(P3Type),
-				QuickConverter.GetType(P4Type),
-				QuickConverter.GetType(P5Type),
-				QuickConverter.GetType(P6Type),
-				QuickConverter.GetType(P7Type),
-				QuickConverter.GetType(P8Type),
-				QuickConverter.GetType(P9Type) 
-			});
+			holder.Converter = new DynamicMultiConverter(func.Item1, vals, Converter, pTypes.Select(t => QuickConverter.GetType(t)).ToArray());
 
 			return getExpression ? holder.ProvideValue(serviceProvider) : holder;
 		}

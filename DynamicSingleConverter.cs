@@ -40,16 +40,8 @@ namespace QuickConverter
 
 		private object DoConversion(object value, Type targetType, Func<object, object[], object> func, object[] values, bool enforceType)
 		{
-			if (enforceType && PType != null)
-			{
-				if (value != null)
-				{
-					if (!PType.IsInstanceOfType(value))
-						return DependencyProperty.UnsetValue;
-				}
-				else if (PType.IsValueType)
-					return DependencyProperty.UnsetValue;
-			}
+			if (enforceType && PType != null && !PType.IsInstanceOfType(value))
+				return DependencyProperty.UnsetValue;
 
 			object result = value;
 			if (func != null)
