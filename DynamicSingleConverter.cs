@@ -58,8 +58,12 @@ namespace QuickConverter
 				}
 				finally
 				{
-					foreach (var container in convertingBack ? _fromDataContainers : _toDataContainers)
-						container.Value = null;
+					var dataContainers = convertingBack ? _fromDataContainers : _toDataContainers;
+					if (dataContainers != null)
+					{
+						foreach (var container in dataContainers)
+							container.Value = null;
+					}
 				}
 			}
 

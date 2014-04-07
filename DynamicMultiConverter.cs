@@ -50,8 +50,11 @@ namespace QuickConverter
 			}
 			finally
 			{
-				foreach (var container in _dataContainers)
-					container.Value = null;
+				if (_dataContainers != null)
+				{
+					foreach (var container in _dataContainers)
+						container.Value = null;
+				}
 			}
 
 			if (result == null)

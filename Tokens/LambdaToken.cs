@@ -61,7 +61,11 @@ namespace QuickConverter.Tokens
 				}
 				Dictionary<string, ConstantExpression> subLocals = new Dictionary<string, ConstantExpression>();
 				foreach (var tuple in pars)
-					subLocals.Add(tuple.Item1, Expression.Constant(new DataContainer()));
+				{
+					var container = new DataContainer();
+					subLocals.Add(tuple.Item1, Expression.Constant(container));
+					dataContainers.Add(container);
+				}
 
 				List<ParameterExpression> parExps = new List<ParameterExpression>();
 				Expression exp = Value.GetExpression(parExps, subLocals, dataContainers, dynamicContext);
@@ -72,7 +76,9 @@ namespace QuickConverter.Tokens
 					{
 						if (!(parameters.Any(p => p.Name == par.Name) || locals.Any(l => l.Key == par.Name)))
 							parameters.Add(par);
-						subLocals.Add(par.Name, Expression.Constant(new DataContainer()));
+						var container = new DataContainer();
+						subLocals.Add(par.Name, Expression.Constant(container));
+						dataContainers.Add(container);
 					}
 					parExps.Clear();
 					exp = Value.GetExpression(parExps, subLocals, dataContainers, dynamicContext);
@@ -106,7 +112,9 @@ namespace QuickConverter.Tokens
 				{
 					if (locals.Any(name => name.Key == arg.Name))
 						throw new Exception("Duplicate local variable name \"" + arg.Name + "\" found.");
-					var value = Expression.Constant(new DataContainer());
+					var container = new DataContainer();
+					var value = Expression.Constant(container);
+					dataContainers.Add(container);
 					newLocals.Add(value);
 					locals.Add(arg.Name, value);
 				}
