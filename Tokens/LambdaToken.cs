@@ -47,7 +47,7 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext)
 		{
 			if (lambda)
 			{
@@ -64,7 +64,7 @@ namespace QuickConverter.Tokens
 					subLocals.Add(tuple.Item1, Expression.Constant(new DataContainer()));
 
 				List<ParameterExpression> parExps = new List<ParameterExpression>();
-				Expression exp = Value.GetExpression(parExps, subLocals, dynamicContext);
+				Expression exp = Value.GetExpression(parExps, subLocals, dataContainers, dynamicContext);
 
 				if (parExps.Count != 0)
 				{
@@ -75,7 +75,7 @@ namespace QuickConverter.Tokens
 						subLocals.Add(par.Name, Expression.Constant(new DataContainer()));
 					}
 					parExps.Clear();
-					exp = Value.GetExpression(parExps, subLocals, dynamicContext);
+					exp = Value.GetExpression(parExps, subLocals, dataContainers, dynamicContext);
 				}
 
 				foreach (var tuple in pars)
@@ -89,13 +89,13 @@ namespace QuickConverter.Tokens
 
 				CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, targetType, dynamicContext);
 
-				Expression block = Expression.Block(subLocals.Zip(parExps, (l, p) => Expression.Assign(Expression.Field(l.Value, "Value"), Expression.Convert(p, typeof(object)))).Concat(new Expression[] { Expression.Dynamic(binder, targetType, exp) }));
+				Expression block = Expression.Block(subLocals.Zip(parExps, (l, p) => Expression.Assign(Expression.Property(l.Value, "Value"), Expression.Convert(p, typeof(object)))).Concat(new Expression[] { Expression.Dynamic(binder, targetType, exp) }));
 
 				Type type = funcTypes[pars.Count].MakeGenericType(pars.Select(t => t.Item2).Concat(new[] { targetType }).ToArray());
 				MethodInfo method = typeof(Expression).GetMethods().FirstOrDefault(m => m.Name == "Lambda" && m.IsGenericMethod && m.GetParameters().Length == 2).MakeGenericMethod(type);
 				object func = ((dynamic)method.Invoke(null, new object[] { block, parExps.ToArray() })).Compile();
 				
-				Expression ret = Expression.Block(subLocals.Skip(parExps.Count).Select(kvp => Expression.Assign(Expression.Field(kvp.Value, "Value"), parameters.Select(p => new Tuple<string, Expression>(p.Name, p)).Concat(locals.Select(k => new Tuple<string, Expression>(k.Key, Expression.Field(k.Value, "Value")))).First(p => p.Item1 == kvp.Key).Item2)).Concat(new [] { Expression.Constant(func) as Expression }));
+				Expression ret = Expression.Block(subLocals.Skip(parExps.Count).Select(kvp => Expression.Assign(Expression.Property(kvp.Value, "Value"), parameters.Select(p => new Tuple<string, Expression>(p.Name, p)).Concat(locals.Select(k => new Tuple<string, Expression>(k.Key, Expression.Property(k.Value, "Value")))).First(p => p.Item1 == kvp.Key).Item2)).Concat(new [] { Expression.Constant(func) as Expression }));
 
 				return ret;
 			}
@@ -110,8 +110,8 @@ namespace QuickConverter.Tokens
 					newLocals.Add(value);
 					locals.Add(arg.Name, value);
 				}
-				IEnumerable<BinaryExpression> assignments = Arguments.Arguments.Cast<AssignmentToken>().Zip(newLocals, (t, l) => Expression.Assign(Expression.Field(l, "Value"), t.Value.GetExpression(parameters, locals, dynamicContext)));
-				Expression ret = Expression.Block(assignments.Cast<Expression>().Concat(new Expression[] {Value.GetExpression(parameters, locals, dynamicContext)}));
+				IEnumerable<BinaryExpression> assignments = Arguments.Arguments.Cast<AssignmentToken>().Zip(newLocals, (t, l) => Expression.Assign(Expression.Property(l, "Value"), t.Value.GetExpression(parameters, locals, dataContainers, dynamicContext)));
+				Expression ret = Expression.Block(assignments.Cast<Expression>().Concat(new Expression[] {Value.GetExpression(parameters, locals, dataContainers, dynamicContext)}));
 				foreach (var arg in Arguments.Arguments.Cast<AssignmentToken>())
 					locals.Remove(arg.Name);
 				return ret;

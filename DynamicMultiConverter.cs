@@ -23,11 +23,12 @@ namespace QuickConverter
 
 		private Func<object[], object[], object> _converter;
 		private object[] _values;
-
-		public DynamicMultiConverter(Func<object[], object[], object> converter, object[] values, string convertExp, Type[] pTypes)
+		private DataContainer[] _dataContainers;
+		public DynamicMultiConverter(Func<object[], object[], object> converter, object[] values, string convertExp, Type[] pTypes, DataContainer[] dataContainers)
 		{
 			_converter = converter;
 			_values = values;
+			_dataContainers = dataContainers;
 			ConvertExpression = convertExp;
 			PTypes = pTypes;
 		}
@@ -46,6 +47,11 @@ namespace QuickConverter
 			{
 				LastException = e;
 				return null;
+			}
+			finally
+			{
+				foreach (var container in _dataContainers)
+					container.Value = null;
 			}
 
 			if (result == null)

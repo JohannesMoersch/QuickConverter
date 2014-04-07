@@ -2,11 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace QuickConverter
 {
-	internal class DataContainer
+	public class DataContainer
 	{
-		public object Value;
+		private ThreadLocal<object> _value = new ThreadLocal<object>();
+		public object Value
+		{
+			get { return _value.Value; }
+			set { _value.Value = value; }
+		}
 	}
 }

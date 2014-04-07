@@ -57,9 +57,9 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, Type dynamicContext)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext)
 		{
-			return Value.GetExpression(parameters, locals, dynamicContext);
+			return Value.GetExpression(parameters, locals, dataContainers, dynamicContext);
 		}
 	}
 }

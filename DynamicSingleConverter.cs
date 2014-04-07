@@ -27,20 +27,24 @@ namespace QuickConverter
 		private Func<object, object[], object> _convertBack;
 		private object[] _toValues;
 		private object[] _fromValues;
-		public DynamicSingleConverter(Func<object, object[], object> converter, Func<object, object[], object> convertBack, object[] toValues, object[] fromValues, string convertExp, string convertBackExp, Type pType)
+		private DataContainer[] _toDataContainers;
+		private DataContainer[] _fromDataContainers;
+		public DynamicSingleConverter(Func<object, object[], object> converter, Func<object, object[], object> convertBack, object[] toValues, object[] fromValues, string convertExp, string convertBackExp, Type pType, DataContainer[] toDataContainers, DataContainer[] fromDataContainers)
 		{
 			_converter = converter;
 			_convertBack = convertBack;
 			_toValues = toValues;
 			_fromValues = fromValues;
+			_toDataContainers = toDataContainers;
+			_fromDataContainers = fromDataContainers;
 			ConvertExpression = convertExp;
 			ConvertBackExpression = convertBackExp;
 			PType = pType;
 		}
 
-		private object DoConversion(object value, Type targetType, Func<object, object[], object> func, object[] values, bool enforceType)
+		private object DoConversion(object value, Type targetType, Func<object, object[], object> func, object[] values, bool convertingBack)
 		{
-			if (enforceType && PType != null && !PType.IsInstanceOfType(value))
+			if (!convertingBack && PType != null && !PType.IsInstanceOfType(value))
 				return DependencyProperty.UnsetValue;
 
 			object result = value;
@@ -51,6 +55,11 @@ namespace QuickConverter
 				{
 					LastException = e;
 					return null; 
+				}
+				finally
+				{
+					foreach (var container in convertingBack ? _fromDataContainers : _toDataContainers)
+						container.Value = null;
 				}
 			}
 
@@ -74,12 +83,12 @@ namespace QuickConverter
 
 		public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
 		{
-			return DoConversion(value, targetType, _converter, _toValues, true);
+			return DoConversion(value, targetType, _converter, _toValues, false);
 		}
 
 		public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
 		{
-			return DoConversion(value, targetType, _convertBack, _fromValues, false);
+			return DoConversion(value, targetType, _convertBack, _fromValues, true);
 		}
 	}
 }
