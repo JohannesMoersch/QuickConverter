@@ -2,39 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Text;
 using System.Windows.Data;
 using System.Windows.Markup;
-using System.Xaml;
 
 namespace QuickConverter
 {
-	/// <summary>
-	/// This type can be substituted for System.Windows.Data.MultiBinding. Multiple bindings and a one way converter can be specified inline.
-	/// </summary>
-	public class MultiBinding : MarkupExtension
+	public class QuickMultiConverter : MarkupExtension
 	{
-		/// <summary>Creates a bound parameter. This can be accessed inside the converter as $P0.</summary>
-		public BindingBase P0 { get; set; }
-		/// <summary>Creates a bound parameter. This can be accessed inside the converter as $P1.</summary>
-		public BindingBase P1 { get; set; }
-		/// <summary>Creates a bound parameter. This can be accessed inside the converter as $P2.</summary>
-		public BindingBase P2 { get; set; }
-		/// <summary>Creates a bound parameter. This can be accessed inside the converter as $P3.</summary>
-		public BindingBase P3 { get; set; }
-		/// <summary>Creates a bound parameter. This can be accessed inside the converter as $P4.</summary>
-		public BindingBase P4 { get; set; }
-		/// <summary>Creates a bound parameter. This can be accessed inside the converter as $P5.</summary>
-		public BindingBase P5 { get; set; }
-		/// <summary>Creates a bound parameter. This can be accessed inside the converter as $P6.</summary>
-		public BindingBase P6 { get; set; }
-		/// <summary>Creates a bound parameter. This can be accessed inside the converter as $P7.</summary>
-		public BindingBase P7 { get; set; }
-		/// <summary>Creates a bound parameter. This can be accessed inside the converter as $P8.</summary>
-		public BindingBase P8 { get; set; }
-		/// <summary>Creates a bound parameter. This can be accessed inside the converter as $P9.</summary>
-		public BindingBase P9 { get; set; }
+		private static Dictionary<string, Tuple<Func<object[], object[], object>, string[], DataContainer[]>> functions = new Dictionary<string, Tuple<Func<object[], object[], object>, string[], DataContainer[]>>();
+
 		/// <summary>Creates a constant parameter. This can be accessed inside the converter as $V0.</summary>
 		public object V0 { get; set; }
 		/// <summary>Creates a constant parameter. This can be accessed inside the converter as $V1.</summary>
@@ -83,89 +60,87 @@ namespace QuickConverter
 		public string Converter { get; set; }
 
 		/// <summary>
-		/// Sets an override converter.
-		/// </summary>
-		public IMultiValueConverter ExternalConverter { get; set; }
-
-		/// <summary>
 		/// This specifies the context to use for dynamic call sites.
 		/// </summary>
 		public Type DynamicContext { get; set; }
 
-		public MultiBinding()
+		public QuickMultiConverter()
 		{
 		}
 
-		public MultiBinding(string converter)
+		public QuickMultiConverter(string converter)
 		{
 			Converter = converter;
 		}
 
+		private Tuple<Delegate, ParameterExpression[], DataContainer[]> GetLambda(string expression)
+		{
+			List<ParameterExpression> parameters;
+			List<DataContainer> dataContainers;
+			Expression exp = EquationTokenizer.Tokenize(expression).GetExpression(out parameters, out dataContainers, DynamicContext);
+			var invalid = parameters.FirstOrDefault(par => par.Name.Length != 2 || (par.Name[0] != 'P' && par.Name[0] != 'V') || !Char.IsDigit(par.Name[1]));
+			if (invalid != null)
+				throw new Exception("\"$" + invalid.Name + "\" is not a valid parameter name for conversion from source.");
+			Delegate del = Expression.Lambda(Expression.Convert(exp, typeof(object)), parameters.ToArray()).Compile();
+			return new Tuple<Delegate, ParameterExpression[], DataContainer[]>(del, parameters.ToArray(), dataContainers.ToArray());
+		}
+
+		private string[] _parameterOrder;
+
+		public IMultiValueConverter Get(out string[] parameterOrder)
+		{
+			var conv = ProvideValue(null) as IMultiValueConverter;
+			parameterOrder = _parameterOrder;
+			return conv;
+		}
+
 		public override object ProvideValue(IServiceProvider serviceProvider)
 		{
-			bool getExpression;
-			if (serviceProvider == null)
-				getExpression = false;
-			else
+			Tuple<Func<object[], object[], object>, string[], DataContainer[]> func = null;
+			if (Converter != null && !functions.TryGetValue(Converter, out func))
 			{
-				var targetProvider = serviceProvider.GetService(typeof(IProvideValueTarget)) as IProvideValueTarget;
-				if (targetProvider == null || !(targetProvider.TargetProperty is PropertyInfo))
-					getExpression = true;
-				else
+				Tuple<Delegate, ParameterExpression[], DataContainer[]> tuple = GetLambda(Converter);
+				if (tuple == null)
+					return null;
+
+				List<string> parNames = new List<string>();
+				int pCount = 0;
+				ParameterExpression inputP = Expression.Parameter(typeof(object[]));
+				ParameterExpression inputV = Expression.Parameter(typeof(object[]));
+				int[] inds = new int[10];
+				foreach (var par in tuple.Item2.Where(p => p.Name[0] == 'P').OrderBy(e => e.Name))
 				{
-					Type propType = (targetProvider.TargetProperty as PropertyInfo).PropertyType;
-					if (propType == typeof(MultiBinding))
-						return this;
-					getExpression = !propType.IsAssignableFrom(typeof(System.Windows.Data.MultiBinding));
+					parNames.Add(par.Name);
+					inds[par.Name[1] - '0'] = pCount++;
 				}
-			}
-
-			var holder = new System.Windows.Data.MultiBinding() { Mode = BindingMode.OneWay };
-
-			if (ExternalConverter == null)
-			{
-				string[] parameterOrder;
-				holder.Converter = new QuickMultiConverter()
+				var arguments = tuple.Item2.Select<ParameterExpression, Expression>(par =>
 				{
-					Converter = Converter,
-					DynamicContext = DynamicContext,
-					P0Type = P0Type,
-					P1Type = P1Type,
-					P2Type = P2Type,
-					P3Type = P3Type,
-					P4Type = P4Type,
-					P5Type = P5Type,
-					P6Type = P6Type,
-					P7Type = P7Type,
-					P8Type = P8Type,
-					P9Type = P9Type,
-					V0 = V0,
-					V1 = V1,
-					V2 = V2,
-					V3 = V3,
-					V4 = V4,
-					V5 = V5,
-					V6 = V6,
-					V7 = V7,
-					V8 = V8,
-					V9 = V9
-				}.Get(out parameterOrder);
+					if (par.Name[0] == 'P')
+						return Expression.ArrayIndex(inputP, Expression.Constant(inds[par.Name[1] - '0']));
+					return Expression.ArrayIndex(inputV, Expression.Constant((int)(par.Name[1] - '0')));
+				});
 
-				foreach (string name in parameterOrder)
-					holder.Bindings.Add(typeof(MultiBinding).GetProperty(name).GetValue(this, null) as BindingBase);
-			}
-			else
-			{
-				holder.Converter = ExternalConverter;
-				for (int i = 0; i <= 9; ++i)
-				{
-					var binding = typeof(MultiBinding).GetProperty("P" + i).GetValue(this, null) as BindingBase;
-					if (binding != null)
-						holder.Bindings.Add(binding);
-				}
+				Expression exp = Expression.Call(Expression.Constant(tuple.Item1, tuple.Item1.GetType()), tuple.Item1.GetType().GetMethod("Invoke"), arguments);
+				var result = Expression.Lambda<Func<object[], object[], object>>(exp, inputP, inputV).Compile();
+				func = new Tuple<Func<object[], object[], object>, string[], DataContainer[]>(result, parNames.ToArray(), tuple.Item3);
+
+				functions.Add(Converter, func);
 			}
 
-			return getExpression ? holder.ProvideValue(serviceProvider) : holder;
+			if (func == null)
+				return null;
+
+			List<object> pTypes = new List<object>();
+			foreach (string name in func.Item2)
+				pTypes.Add(typeof(QuickMultiConverter).GetProperty(name + "Type").GetValue(this, null));
+
+			List<object> vals = new List<object>();
+			for (int i = 0; i <= 9; ++i)
+				vals.Add(typeof(QuickMultiConverter).GetProperty("V" + i).GetValue(this, null));
+
+			_parameterOrder = func.Item2;
+
+			return new DynamicMultiConverter(func.Item1, vals.ToArray(), Converter, pTypes.Select(t => QuickConverter.GetType(t)).ToArray(), func.Item3);
 		}
 	}
 }

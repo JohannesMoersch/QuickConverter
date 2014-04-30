@@ -55,6 +55,7 @@
     <Compile Include="Operator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuickConverter.cs" />
+    <Compile Include="QuickMultiConverter.cs" />
     <Compile Include="Tokens\ArgumentListToken.cs" />
     <Compile Include="Tokens\ArrayAccessToken.cs" />
     <Compile Include="Tokens\AssignmentToken.cs" />

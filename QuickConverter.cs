@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using System.Windows.Data;
 using System.Windows.Markup;
 
 namespace QuickConverter
 {
 	public class QuickConverter : MarkupExtension
 	{
-		private static Dictionary<string, Tuple<Func<object, object[], object>, string[], DataContainer[]>> toFunctions = new Dictionary<string, Tuple<Func<object, object[], object>, string[], DataContainer[]>>();
-		private static Dictionary<string, Tuple<Func<object, object[], object>, string[], DataContainer[]>> fromFunctions = new Dictionary<string, Tuple<Func<object, object[], object>, string[], DataContainer[]>>();
+		private static Dictionary<string, Tuple<Func<object, object[], object>, DataContainer[]>> toFunctions = new Dictionary<string, Tuple<Func<object, object[], object>, DataContainer[]>>();
+		private static Dictionary<string, Tuple<Func<object, object[], object>, DataContainer[]>> fromFunctions = new Dictionary<string, Tuple<Func<object, object[], object>, DataContainer[]>>();
 
 		/// <summary>Creates a constant parameter. This can be accessed inside the converter as $V0.</summary>
 		public object V0 { get; set; }
@@ -80,10 +81,9 @@ namespace QuickConverter
 			return new Tuple<Delegate, ParameterExpression[], DataContainer[]>(del, parameters.ToArray(), dataContainers.ToArray());
 		}
 
-		internal static Expression GetFinishedLambda(Tuple<Delegate, ParameterExpression[], DataContainer[]> lambda, out ParameterExpression inputP, out ParameterExpression inputV, out ParameterExpression value, out List<string> values)
+		internal static Expression GetFinishedLambda(Tuple<Delegate, ParameterExpression[], DataContainer[]> lambda, out ParameterExpression inputP, out ParameterExpression inputV, out ParameterExpression value)
 		{
 			List<string> vals = new List<string>();
-			int vCount = 0;
 			ParameterExpression val = Expression.Parameter(typeof(object));
 			ParameterExpression inP = Expression.Parameter(typeof(object));
 			ParameterExpression inV = Expression.Parameter(typeof(object[]));
@@ -92,16 +92,12 @@ namespace QuickConverter
 				if (par.Name[0] == 'P')
 					return inP;
 				else if (par.Name[0] == 'V')
-				{
-					vals.Add(par.Name);
-					return Expression.ArrayIndex(inV, Expression.Constant(vCount++));
-				}
+					return Expression.ArrayIndex(inV, Expression.Constant((int)(par.Name[1] - '0')));
 				return val;
 			});
 			inputP = inP;
 			inputV = inV;
 			value = val;
-			values = vals;
 
 			return Expression.Call(Expression.Constant(lambda.Item1, lambda.Item1.GetType()), lambda.Item1.GetType().GetMethod("Invoke"), arguments);
 		}
@@ -123,21 +119,25 @@ namespace QuickConverter
 			throw new Exception("PType must be either string or a Type.");
 		}
 
+		public IValueConverter Get()
+		{
+			return ProvideValue(null) as IValueConverter;
+		}
+
 		public override object ProvideValue(IServiceProvider serviceProvider)
 		{
 			ParameterExpression inputP, inputV, value;
-			List<string> values;
-			Tuple<Func<object, object[], object>, string[], DataContainer[]> toFunc = null;
-			Tuple<Func<object, object[], object>, string[], DataContainer[]> fromFunc = null;
+			Tuple<Func<object, object[], object>, DataContainer[]> toFunc = null;
+			Tuple<Func<object, object[], object>, DataContainer[]> fromFunc = null;
 			if (Convert != null && !toFunctions.TryGetValue(Convert, out toFunc))
 			{
 				Tuple<Delegate, ParameterExpression[], DataContainer[]> tuple = QuickConverter.GetLambda(Convert, false, DynamicContext);
 				if (tuple == null)
 					return null;
 
-				Expression exp = QuickConverter.GetFinishedLambda(tuple, out inputP, out inputV, out value, out values);
+				Expression exp = QuickConverter.GetFinishedLambda(tuple, out inputP, out inputV, out value);
 				var result = Expression.Lambda<Func<object, object[], object>>(exp, inputP, inputV).Compile();
-				toFunc = new Tuple<Func<object, object[], object>, string[], DataContainer[]>(result, values.ToArray(), tuple.Item3);
+				toFunc = new Tuple<Func<object, object[], object>, DataContainer[]>(result, tuple.Item3);
 
 				toFunctions.Add(Convert, toFunc);
 			}
@@ -147,22 +147,18 @@ namespace QuickConverter
 				if (tuple == null)
 					return null;
 
-				Expression exp = QuickConverter.GetFinishedLambda(tuple, out inputP, out inputV, out value, out values);
+				Expression exp = QuickConverter.GetFinishedLambda(tuple, out inputP, out inputV, out value);
 				var result = Expression.Lambda<Func<object, object[], object>>(exp, value, inputV).Compile();
-				fromFunc = new Tuple<Func<object, object[], object>, string[], DataContainer[]>(result, values.ToArray(), tuple.Item3);
+				fromFunc = new Tuple<Func<object, object[], object>, DataContainer[]>(result, tuple.Item3);
 
 				fromFunctions.Add(ConvertBack, fromFunc);
 			}
 
-			object[] toVals = null;
-			if (toFunc != null)
-				toVals = toFunc.Item2.Select(str => typeof(QuickConverter).GetProperty(str).GetValue(this, null)).ToArray();
+			List<object> vals = new List<object>();
+			for (int i = 0; i <= 9; ++i)
+				vals.Add(typeof(QuickConverter).GetProperty("V" + i).GetValue(this, null));
 
-			object[] fromVals = null;
-			if (fromFunc != null)
-				fromVals = fromFunc.Item2.Select(str => typeof(QuickConverter).GetProperty(str).GetValue(this, null)).ToArray();
-
-			return new DynamicSingleConverter(toFunc != null ? toFunc.Item1 : null, fromFunc != null ? fromFunc.Item1 : null, toVals, fromVals, Convert, ConvertBack, GetType(PType), toFunc != null ? toFunc.Item3 : null, fromFunc != null ? fromFunc.Item3 : null);
+			return new DynamicSingleConverter(toFunc != null ? toFunc.Item1 : null, fromFunc != null ? fromFunc.Item1 : null, vals.ToArray(), Convert, ConvertBack, GetType(PType), toFunc != null ? toFunc.Item2 : null, fromFunc != null ? fromFunc.Item2 : null);
 		}
 	}
 }

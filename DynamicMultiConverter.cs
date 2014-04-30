@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -16,10 +17,11 @@ namespace QuickConverter
 
 		public string ConvertExpression { get; private set; }
 		public Exception LastException { get; private set; }
+		public int ExceptionCount { get; private set; }
 
 		public Type[] PTypes { get; private set; }
 
-		public object[] ToValues { get { return _values; } }
+		public object[] Values { get { return _values; } }
 
 		private Func<object[], object[], object> _converter;
 		private object[] _values;
@@ -37,7 +39,7 @@ namespace QuickConverter
 		{
 			for (int i = 0; i < values.Length; ++i)
 			{
-				if (PTypes[i] != null && !PTypes[i].IsInstanceOfType(values[i]))
+				if (PTypes[i] != null && (values[i] == DependencyProperty.UnsetValue || !PTypes[i].IsInstanceOfType(values[i])))
 					return DependencyProperty.UnsetValue;
 			}
 
@@ -46,6 +48,8 @@ namespace QuickConverter
 			catch (Exception e)
 			{
 				LastException = e;
+				++ExceptionCount;
+				Debug.WriteLine("QuickMultiConverter Exception (\"" + ConvertExpression + "\") - " + e.Message + (e.InnerException != null ? " (Inner - " + e.InnerException.Message + ")" : ""));
 				return null;
 			}
 			finally

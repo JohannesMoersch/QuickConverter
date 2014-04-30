@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -17,24 +18,22 @@ namespace QuickConverter
 		public string ConvertExpression { get; private set; }
 		public string ConvertBackExpression { get; private set; }
 		public Exception LastException { get; private set; }
+		public int ExceptionCount { get; private set; }
 
 		public Type PType { get; private set; }
 
-		public object[] ToValues { get { return _toValues; } }
-		public object[] FromValues { get { return _fromValues; } }
+		public object[] Values { get { return _values; } }
 
 		private Func<object, object[], object> _converter;
 		private Func<object, object[], object> _convertBack;
-		private object[] _toValues;
-		private object[] _fromValues;
+		private object[] _values;
 		private DataContainer[] _toDataContainers;
 		private DataContainer[] _fromDataContainers;
-		public DynamicSingleConverter(Func<object, object[], object> converter, Func<object, object[], object> convertBack, object[] toValues, object[] fromValues, string convertExp, string convertBackExp, Type pType, DataContainer[] toDataContainers, DataContainer[] fromDataContainers)
+		public DynamicSingleConverter(Func<object, object[], object> converter, Func<object, object[], object> convertBack, object[] values, string convertExp, string convertBackExp, Type pType, DataContainer[] toDataContainers, DataContainer[] fromDataContainers)
 		{
 			_converter = converter;
 			_convertBack = convertBack;
-			_toValues = toValues;
-			_fromValues = fromValues;
+			_values = values;
 			_toDataContainers = toDataContainers;
 			_fromDataContainers = fromDataContainers;
 			ConvertExpression = convertExp;
@@ -42,18 +41,20 @@ namespace QuickConverter
 			PType = pType;
 		}
 
-		private object DoConversion(object value, Type targetType, Func<object, object[], object> func, object[] values, bool convertingBack)
+		private object DoConversion(object value, Type targetType, Func<object, object[], object> func, bool convertingBack)
 		{
-			if (!convertingBack && PType != null && !PType.IsInstanceOfType(value))
+			if (!convertingBack && PType != null && (value == DependencyProperty.UnsetValue || !PType.IsInstanceOfType(value)))
 				return DependencyProperty.UnsetValue;
 
 			object result = value;
 			if (func != null)
 			{
-				try { result = func(result, values); }
+				try { result = func(result, _values); }
 				catch (Exception e)
 				{
 					LastException = e;
+					++ExceptionCount;
+					Debug.WriteLine("QuickMultiConverter Exception (\"" + ConvertExpression + "\") - " + e.Message + (e.InnerException != null ? " (Inner - " + e.InnerException.Message + ")" : ""));
 					return null; 
 				}
 				finally
@@ -87,12 +88,12 @@ namespace QuickConverter
 
 		public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
 		{
-			return DoConversion(value, targetType, _converter, _toValues, false);
+			return DoConversion(value, targetType, _converter, false);
 		}
 
 		public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
 		{
-			return DoConversion(value, targetType, _convertBack, _fromValues, true);
+			return DoConversion(value, targetType, _convertBack, true);
 		}
 	}
 }
