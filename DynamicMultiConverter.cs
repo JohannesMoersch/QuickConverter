@@ -49,7 +49,8 @@ namespace QuickConverter
 			{
 				LastException = e;
 				++ExceptionCount;
-				Debug.WriteLine("QuickMultiConverter Exception (\"" + ConvertExpression + "\") - " + e.Message + (e.InnerException != null ? " (Inner - " + e.InnerException.Message + ")" : ""));
+				if (Debugger.IsAttached)
+					Console.WriteLine("QuickMultiConverter Exception (\"" + ConvertExpression + "\") - " + e.Message + (e.InnerException != null ? " (Inner - " + e.InnerException.Message + ")" : ""));
 				return null;
 			}
 			finally
