@@ -83,9 +83,79 @@ namespace QuickConverter
 		public string Converter { get; set; }
 
 		/// <summary>
+		/// The expression to use for converting data from the target back to the source for P0.
+		/// The target value is accessible as $value.
+		/// The bound parameters $P0-$P9 cannot be accessed when converting back.
+		/// </summary>
+		public string ConvertBack0 { get; set; }
+		/// <summary>
+		/// The expression to use for converting data from the target back to the source for P1.
+		/// The target value is accessible as $value.
+		/// The bound parameters $P0-$P9 cannot be accessed when converting back.
+		/// </summary>
+		public string ConvertBack1 { get; set; }
+		/// <summary>
+		/// The expression to use for converting data from the target back to the source for P2.
+		/// The target value is accessible as $value.
+		/// The bound parameters $P0-$P9 cannot be accessed when converting back.
+		/// </summary>
+		public string ConvertBack2 { get; set; }
+		/// <summary>
+		/// The expression to use for converting data from the target back to the source for P3.
+		/// The target value is accessible as $value.
+		/// The bound parameters $P0-$P9 cannot be accessed when converting back.
+		/// </summary>
+		public string ConvertBack3 { get; set; }
+		/// <summary>
+		/// The expression to use for converting data from the target back to the source for P4.
+		/// The target value is accessible as $value.
+		/// The bound parameters $P0-$P9 cannot be accessed when converting back.
+		/// </summary>
+		public string ConvertBack4 { get; set; }
+		/// <summary>
+		/// The expression to use for converting data from the target back to the source for P5.
+		/// The target value is accessible as $value.
+		/// The bound parameters $P0-$P9 cannot be accessed when converting back.
+		/// </summary>
+		public string ConvertBack5 { get; set; }
+		/// <summary>
+		/// The expression to use for converting data from the target back to the source for P6.
+		/// The target value is accessible as $value.
+		/// The bound parameters $P0-$P9 cannot be accessed when converting back.
+		/// </summary>
+		public string ConvertBack6 { get; set; }
+		/// <summary>
+		/// The expression to use for converting data from the target back to the source for P7.
+		/// The target value is accessible as $value.
+		/// The bound parameters $P0-$P9 cannot be accessed when converting back.
+		/// </summary>
+		public string ConvertBack7 { get; set; }
+		/// <summary>
+		/// The expression to use for converting data from the target back to the source for P8.
+		/// The target value is accessible as $value.
+		/// The bound parameters $P0-$P9 cannot be accessed when converting back.
+		/// </summary>
+		public string ConvertBack8 { get; set; }
+		/// <summary>
+		/// The expression to use for converting data from the target back to the source for P9.
+		/// The target value is accessible as $value.
+		/// The bound parameters $P0-$P9 cannot be accessed when converting back.
+		/// </summary>
+		public string ConvertBack9 { get; set; }
+		/// <summary>
+		/// Sets the binding mode.
+		/// </summary>
+		public BindingMode Mode { get; set; }
+
+		/// <summary>
 		/// Sets an override converter.
 		/// </summary>
 		public IMultiValueConverter ExternalConverter { get; set; }
+
+		/// <summary>
+		/// Sets the update source trigger.
+		/// </summary>
+		public UpdateSourceTrigger UpdateSourceTrigger { get; set; }
 
 		/// <summary>
 		/// This specifies the context to use for dynamic call sites.
@@ -120,7 +190,7 @@ namespace QuickConverter
 				}
 			}
 
-			var holder = new System.Windows.Data.MultiBinding() { Mode = BindingMode.OneWay };
+			var holder = new System.Windows.Data.MultiBinding() { Mode = Mode, UpdateSourceTrigger = UpdateSourceTrigger };
 
 			if (ExternalConverter == null)
 			{
@@ -148,7 +218,17 @@ namespace QuickConverter
 					V6 = V6,
 					V7 = V7,
 					V8 = V8,
-					V9 = V9
+					V9 = V9,
+					ConvertBack0 = ConvertBack0,
+					ConvertBack1 = ConvertBack1,
+					ConvertBack2 = ConvertBack2,
+					ConvertBack3 = ConvertBack3,
+					ConvertBack4 = ConvertBack4,
+					ConvertBack5 = ConvertBack5,
+					ConvertBack6 = ConvertBack6,
+					ConvertBack7 = ConvertBack7,
+					ConvertBack8 = ConvertBack8,
+					ConvertBack9 = ConvertBack9
 				}.Get(out parameterOrder);
 
 				foreach (string name in parameterOrder)

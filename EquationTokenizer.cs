@@ -397,6 +397,9 @@ namespace QuickConverter
 		internal static bool TryEvaluateExpression(string text, out TokenBase token)
 		{
 			string temp = text;
+			if (new NullCoalesceOperatorToken().TryGetToken(ref temp, out token))
+				return true;
+			temp = text;
 			if (new TernaryOperatorToken().TryGetToken(ref temp, out token))
 				return true;
 

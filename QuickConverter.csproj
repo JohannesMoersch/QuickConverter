@@ -69,6 +69,7 @@
     <Compile Include="Tokens\IPostToken.cs" />
     <Compile Include="Tokens\IsToken.cs" />
     <Compile Include="Tokens\LambdaToken.cs" />
+    <Compile Include="Tokens\NullCoalesceOperatorToken.cs" />
     <Compile Include="Tokens\ParameterToken.cs" />
     <Compile Include="Tokens\StaticFunctionToken.cs" />
     <Compile Include="Tokens\StaticMemberToken.cs" />

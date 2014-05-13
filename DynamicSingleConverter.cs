@@ -56,7 +56,7 @@ namespace QuickConverter
 					++ExceptionCount;
 					if (Debugger.IsAttached)
 						Console.WriteLine("QuickMultiConverter Exception (\"" + ConvertExpression + "\") - " + e.Message + (e.InnerException != null ? " (Inner - " + e.InnerException.Message + ")" : ""));
-					return null; 
+					return DependencyProperty.UnsetValue; 
 				}
 				finally
 				{
@@ -69,8 +69,8 @@ namespace QuickConverter
 				}
 			}
 
-			if (result == null)
-				return null;
+			if (result == null || result == DependencyProperty.UnsetValue || result == System.Windows.Data.Binding.DoNothing)
+				return result;
 
 			if (targetType == typeof(string))
 				return result.ToString();
