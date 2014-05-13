@@ -142,10 +142,21 @@ namespace QuickConverter
 		/// The bound parameters $P0-$P9 cannot be accessed when converting back.
 		/// </summary>
 		public string ConvertBack9 { get; set; }
+
+		private bool _modeSet = false;
+		private BindingMode _mode;
 		/// <summary>
 		/// Sets the binding mode.
 		/// </summary>
-		public BindingMode Mode { get; set; }
+		public BindingMode Mode
+		{
+			get { return _mode; }
+			set
+			{
+				_mode = value;
+				_modeSet = true;
+			}
+		}
 
 		/// <summary>
 		/// Sets an override converter.
@@ -233,6 +244,14 @@ namespace QuickConverter
 
 				foreach (string name in parameterOrder)
 					holder.Bindings.Add(typeof(MultiBinding).GetProperty(name).GetValue(this, null) as BindingBase);
+
+				if (!_modeSet)
+				{
+					bool exists = false;
+					for (int i = 0; i <= 9; ++i)
+						exists |= !String.IsNullOrWhiteSpace(typeof(MultiBinding).GetProperty("ConvertBack" + i).GetValue(this, null) as string);
+					holder.Mode = exists ? BindingMode.TwoWay : BindingMode.OneWay;
+				}
 			}
 			else
 			{
