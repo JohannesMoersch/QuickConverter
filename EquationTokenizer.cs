@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -130,7 +131,7 @@ namespace QuickConverter
 
 		static MethodInfo InferTypes(MethodInfo method, params object[] parameters)
 		{
-			if (method == null || parameters == null || method.GetParameters().Length != parameters.Length)
+			if (method == null || parameters == null || method.GetParameters().Length < parameters.Length)
 				return null;
 			Type[] pars = parameters.Select(o => o != null ? o.GetType() : null).ToArray();
 			Dictionary<Type, Type> arguments = new Dictionary<Type, Type>();
@@ -225,7 +226,7 @@ namespace QuickConverter
 			return null;
 		}
 
-		internal static MethodInfo GetMethod(string methodName, List<Type> typeParams, object[] parameters)
+		internal static Tuple<MethodInfo, object[]> GetMethod(string methodName, List<Type> typeParams, object[] parameters)
 		{
 			MethodInfo method = null;
 			if (methods.Count == 0 || parameters[0] == null || !methods.ContainsKey(methodName))
@@ -248,7 +249,7 @@ namespace QuickConverter
 				for (int i = 0; i < methodList.Count; ++i)
 				{
 					var param = methodList[i].GetParameters();
-					if (methodList[i].IsGenericMethod && param.Length == paramTypes.Length)
+					if (methodList[i].IsGenericMethod && (param.Length == paramTypes.Length || (param.Length > paramTypes.Length && param[paramTypes.Length].IsOptional)))
 					{
 						var args = methodList[i].GetGenericArguments();
 						if (args.Length == typeParams.Count)
@@ -272,7 +273,7 @@ namespace QuickConverter
 				for (int i = 0; i < methodList.Count; ++i)
 				{
 					var param = methodList[i].GetParameters();
-					if (param.Length == paramTypes.Length)
+					if (param.Length == paramTypes.Length || (param.Length > paramTypes.Length && param[paramTypes.Length].IsOptional))
 					{
 						bool good = true;
 						for (int j = 0; j < paramTypes.Length; ++j)
@@ -307,7 +308,7 @@ namespace QuickConverter
 					if (method != null)
 					{
 						var param = method.GetParameters();
-						if (param.Length == paramTypes.Length)
+						if (param.Length == paramTypes.Length || (param.Length > paramTypes.Length && param[paramTypes.Length].IsOptional))
 						{
 							bool good = true;
 							for (int j = 0; j < paramTypes.Length; ++j)
@@ -321,7 +322,13 @@ namespace QuickConverter
 				if (method != null)
 					methodList.Add(method);
 			}
-			return method;
+			if (method == null)
+				return null;
+			var pars = method.GetParameters();
+			if (pars.Length != parameters.Length)
+				return new Tuple<MethodInfo, object[]>(method, parameters.Concat(pars.Skip(parameters.Length).Select(p => p.DefaultValue)).ToArray());
+			return new Tuple<MethodInfo, object[]>(method, parameters);
+			
 		}
 
 		internal static bool TryGetType(string name, List<Type> typeParams, out Type type)
@@ -457,7 +464,11 @@ namespace QuickConverter
 		{
 			TokenBase token;
 			if (!TryEvaluateExpression(expression, out token))
+			{
+				if (Debugger.IsAttached)
+					Console.WriteLine("EquationTokenizer Exception (\"" + expression + "\") - Failed to tokenize.");
 				throw new Exception("Failed to tokenize expression \"" + expression + "\". Did you forget a '$'?");
+			}
 			return token;
 		}
 	}

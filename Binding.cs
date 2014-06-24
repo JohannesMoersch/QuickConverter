@@ -45,7 +45,6 @@ namespace QuickConverter
 		/// Both QuickConverter syntax (as a string) and Type objects are valid. 
 		/// </summary>
 		public object PType { get; set; }
-
 		/// <summary>
 		/// The expression to use for converting data from the source.
 		/// </summary>

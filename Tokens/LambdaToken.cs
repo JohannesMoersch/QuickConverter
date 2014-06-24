@@ -14,11 +14,11 @@ namespace QuickConverter.Tokens
 	{
 		private static Type[] funcTypes = new Type[] { typeof(Func<>), typeof(Func<,>), typeof(Func<,,>), typeof(Func<,,,>), typeof(Func<,,,,>), typeof(Func<,,,,,>), typeof(Func<,,,,,,>), typeof(Func<,,,,,,,>), typeof(Func<,,,,,,,,>), typeof(Func<,,,,,,,,,>), typeof(Func<,,,,,,,,,,>), typeof(Func<,,,,,,,,,,,>), typeof(Func<,,,,,,,,,,,,>), typeof(Func<,,,,,,,,,,,,,>), typeof(Func<,,,,,,,,,,,,,,,>), typeof(Func<,,,,,,,,,,,,,,,,>) };
 
-		private static Operator[] booleanOperators = new Operator[] { Operator.And, Operator.AlternateAnd, Operator.Or, Operator.Equals, Operator.NotEquals, Operator.GreaterThan, Operator.LessThan, Operator.GreaterOrEqual, Operator.LessOrEqual };
-
 		internal LambdaToken()
 		{
 		}
+
+		public override Type ReturnType { get { return typeof(object); } } 
 
 		private ArgumentListToken Arguments;
 		private TokenBase Value;
@@ -87,17 +87,11 @@ namespace QuickConverter.Tokens
 				foreach (var tuple in pars)
 					parExps.Add(Expression.Parameter(tuple.Item2, tuple.Item1));
 
-				Type targetType = typeof(object);
-				if (Value is TypeCastToken)
-					targetType = (Value as TypeCastToken).TargetType;
-				else if (Value is BinaryOperatorToken && booleanOperators.Contains((Value as BinaryOperatorToken).Operation))
-					targetType = typeof(bool);
+				CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, Value.ReturnType, dynamicContext);
 
-				CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, targetType, dynamicContext);
+				Expression block = Expression.Block(subLocals.Zip(parExps, (l, p) => Expression.Assign(Expression.Property(l.Value, "Value"), Expression.Convert(p, typeof(object)))).Concat(new Expression[] { Expression.Dynamic(binder, Value.ReturnType, exp) }));
 
-				Expression block = Expression.Block(subLocals.Zip(parExps, (l, p) => Expression.Assign(Expression.Property(l.Value, "Value"), Expression.Convert(p, typeof(object)))).Concat(new Expression[] { Expression.Dynamic(binder, targetType, exp) }));
-
-				Type type = funcTypes[pars.Count].MakeGenericType(pars.Select(t => t.Item2).Concat(new[] { targetType }).ToArray());
+				Type type = funcTypes[pars.Count].MakeGenericType(pars.Select(t => t.Item2).Concat(new[] { Value.ReturnType }).ToArray());
 				MethodInfo method = typeof(Expression).GetMethods().FirstOrDefault(m => m.Name == "Lambda" && m.IsGenericMethod && m.GetParameters().Length == 2).MakeGenericMethod(type);
 				object func = ((dynamic)method.Invoke(null, new object[] { block, parExps.ToArray() })).Compile();
 				

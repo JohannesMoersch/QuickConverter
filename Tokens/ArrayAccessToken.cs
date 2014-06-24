@@ -14,6 +14,8 @@ namespace QuickConverter.Tokens
 		{
 		}
 
+		public override Type ReturnType { get { return typeof(object); } } 
+
 		private ArgumentListToken index;
 		TokenBase IPostToken.Target { get; set; }
 		internal override bool TryGetToken(ref string text, out TokenBase token)

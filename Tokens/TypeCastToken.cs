@@ -15,6 +15,8 @@ namespace QuickConverter.Tokens
 			this.parseTarget = parseTarget;
 		}
 
+		public override Type ReturnType { get { return TargetType; } } 
+
 		public Type TargetType { get; private set; }
 		public TokenBase Target { get; set; }
 		private bool parseTarget;

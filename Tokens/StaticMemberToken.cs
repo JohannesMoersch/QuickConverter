@@ -13,6 +13,8 @@ namespace QuickConverter.Tokens
 		{
 		}
 
+		public override Type ReturnType { get { return member is FieldInfo ? (member as FieldInfo).FieldType : (member as PropertyInfo).PropertyType; } } 
+
 		private MemberInfo member;
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{

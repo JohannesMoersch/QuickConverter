@@ -15,10 +15,14 @@ namespace QuickConverter.Tokens
 		private static PropertyInfo SupportsExtensions = typeof(EquationTokenizer).GetProperty("SupportsExtensionMethods", BindingFlags.NonPublic | BindingFlags.Static);
 		private static MethodInfo GetMethod = typeof(EquationTokenizer).GetMethod("GetMethod", BindingFlags.NonPublic | BindingFlags.Static);
 		private static MethodInfo InvokeMethod = typeof(MethodInfo).GetMethods().First(m => m.Name == "Invoke" && m.GetParameters().Length == 2);
+		private static PropertyInfo Item1Prop = typeof(Tuple<MethodInfo, object[]>).GetProperty("Item1");
+		private static PropertyInfo Item2Prop = typeof(Tuple<MethodInfo, object[]>).GetProperty("Item2");
 
 		internal InstanceFunctionToken()
 		{
 		}
+
+		public override Type ReturnType { get { return typeof(object); } } 
 
 		private string methodName;
 		private ArgumentListToken arguments;
@@ -67,11 +71,11 @@ namespace QuickConverter.Tokens
 
 			var targetVar = Expression.Variable(typeof(object));
 			var argsVar = Expression.Variable(typeof(object[]));
-			var methodVar = Expression.Variable(typeof(MethodInfo));
+			var methodVar = Expression.Variable(typeof(Tuple<MethodInfo, object[]>));
 			var resultVar = Expression.Variable(typeof(object));
 
-			Expression test = Expression.Equal(methodVar, Expression.Constant(null, typeof(MethodInfo)));
-			Expression ifNotNull = Expression.Assign(resultVar, Expression.Call(methodVar, InvokeMethod, Expression.Constant(null), argsVar));
+			Expression test = Expression.Equal(methodVar, Expression.Constant(null, typeof(Tuple<MethodInfo, object[]>)));
+			Expression ifNotNull = Expression.Assign(resultVar, Expression.Call(Expression.Property(methodVar, Item1Prop), InvokeMethod, Expression.Constant(null), Expression.Property(methodVar, Item2Prop)));
 			Expression ifNull = Expression.Assign(resultVar, dynamicCall);
 
 			Expression branch = Expression.IfThenElse(test, ifNull, ifNotNull);
@@ -79,7 +83,7 @@ namespace QuickConverter.Tokens
 			Expression block = Expression.Block(new[] { targetVar, argsVar, methodVar }, new[] 
 				{
 					Expression.Assign(targetVar, (this as IPostToken).Target.GetExpression(parameters, locals, dataContainers, dynamicContext)),
-					Expression.Assign(argsVar, Expression.NewArrayInit(typeof(object), new[] { targetVar}.Concat(arguments.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext))))),
+					Expression.Assign(argsVar, Expression.NewArrayInit(typeof(object), new[] { targetVar }.Concat(arguments.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext))))),
 					Expression.Assign(methodVar, Expression.Call(GetMethod, Expression.Constant(methodName, typeof(string)), Expression.Constant(types, typeof(List<Type>)), argsVar)),
 					branch,
 					resultVar

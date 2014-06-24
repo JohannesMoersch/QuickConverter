@@ -159,6 +159,15 @@ namespace QuickConverter
 		}
 
 		/// <summary>
+		/// The value that is used in the target when the value of the source is null.
+		/// </summary>
+		public object TargetNullValue { get; set; }
+		/// <summary>
+		/// The value to use when the binding is unable to return a value.
+		/// </summary>
+		public object FallbackValue { get; set; }
+
+		/// <summary>
 		/// Sets an override converter.
 		/// </summary>
 		public IMultiValueConverter ExternalConverter { get; set; }
@@ -202,6 +211,10 @@ namespace QuickConverter
 			}
 
 			var holder = new System.Windows.Data.MultiBinding() { Mode = Mode, UpdateSourceTrigger = UpdateSourceTrigger };
+			if (FallbackValue != null)
+				holder.FallbackValue = FallbackValue;
+			if (TargetNullValue != null)
+				holder.TargetNullValue = TargetNullValue;
 
 			if (ExternalConverter == null)
 			{

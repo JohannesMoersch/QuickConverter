@@ -14,6 +14,8 @@ namespace QuickConverter.Tokens
 		{
 		}
 
+		public override Type ReturnType { get { return condition.ReturnType == onNull.ReturnType ? condition.ReturnType : typeof(object); } } 
+
 		private TokenBase condition;
 		private TokenBase onNull;
 

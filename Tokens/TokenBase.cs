@@ -165,6 +165,8 @@ namespace QuickConverter.Tokens
 
 		internal abstract bool TryGetToken(ref string text, out TokenBase token);
 
+		public abstract Type ReturnType { get; }
+
 		public Expression GetExpression(out List<ParameterExpression> parameters, out List<DataContainer> dataContainers, Type dynamicContext = null)
 		{
 			parameters = new List<ParameterExpression>();

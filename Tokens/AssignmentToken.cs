@@ -15,6 +15,8 @@ namespace QuickConverter.Tokens
 			this.type = type;
 		}
 
+		public override Type ReturnType { get { return typeof(object); } } 
+
 		internal string Name { get; private set; }
 		internal MemberInfo Member { get; private set; }
 		internal TokenBase Value { get; private set; }

@@ -36,6 +36,8 @@ namespace QuickConverter.Tokens
 			default(ExpressionType)
 		};
 
+		public override Type ReturnType { get { return Operation >= Operator.GreaterOrEqual && Operation <= Operator.Or ? typeof(bool) : typeof(object); } } 
+
 		private TokenBase left;
 		private TokenBase right;
 		internal Operator Operation { get; set; }

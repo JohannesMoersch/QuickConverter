@@ -15,6 +15,8 @@ namespace QuickConverter.Tokens
 		private bool allowSubLists;
 		private bool allowTypeCasts;
 
+		public override Type ReturnType { get { return typeof(object); } } 
+
 		internal ArgumentListToken(char open, char close, Type assignmentType)
 		{
 			this.open = open;

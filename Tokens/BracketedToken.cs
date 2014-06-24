@@ -12,6 +12,8 @@ namespace QuickConverter.Tokens
 		{
 		}
 
+		public override Type ReturnType { get { return value.ReturnType; } } 
+
 		private TokenBase value;
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{

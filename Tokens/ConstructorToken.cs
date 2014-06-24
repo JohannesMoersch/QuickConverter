@@ -16,6 +16,8 @@ namespace QuickConverter.Tokens
 		{
 		}
 
+		public override Type ReturnType { get { return conType != null ? conType : arrayType.MakeArrayType(); } } 
+
 		private Type arrayType;
 		private Type conType;
 		private ConstructorInfo constructor;
