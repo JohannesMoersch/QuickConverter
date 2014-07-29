@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -13,6 +14,8 @@ namespace QuickConverter
 {
 	public class DynamicMultiConverter : IMultiValueConverter
 	{
+		private static ConcurrentDictionary<Type, Func<object, object>> castFunctions = new ConcurrentDictionary<Type, Func<object, object>>();
+
 		public string ConvertExpression { get; private set; }
 		public string[] ConvertBackExpression { get; private set; }
 		public Exception LastException { get; private set; }
@@ -64,6 +67,7 @@ namespace QuickConverter
 				}
 			}
 
+			result = CastResult(result, targetType);
 			return result;
 		}
 
@@ -81,6 +85,7 @@ namespace QuickConverter
 						Console.WriteLine("QuickMultiConverter Exception (\"" + ConvertBackExpression[i] + "\") - " + e.Message + (e.InnerException != null ? " (Inner - " + e.InnerException.Message + ")" : ""));
 					ret[i] = DependencyProperty.UnsetValue;
 				}
+				ret[i] = CastResult(ret[i], targetTypes[i]);
 			}
 			if (_dataContainers != null)
 			{
@@ -88,6 +93,35 @@ namespace QuickConverter
 					container.Value = null;
 			}
 			return ret;
+		}
+
+		private object CastResult(object result, Type targetType)
+		{
+			if (result == null || result == DependencyProperty.UnsetValue || result == System.Windows.Data.Binding.DoNothing || targetType == null || targetType == typeof(object))
+				return result;
+
+			if (targetType == typeof(string))
+				return result.ToString();
+
+			Func<object, object> cast;
+			if (!castFunctions.TryGetValue(targetType, out cast))
+			{
+				ParameterExpression par = Expression.Parameter(typeof(object));
+				cast = Expression.Lambda<Func<object, object>>(Expression.Convert(Expression.Dynamic(Binder.Convert(CSharpBinderFlags.ConvertExplicit, targetType, typeof(object)), targetType, par), typeof(object)), par).Compile();
+				castFunctions.TryAdd(targetType, cast);
+			}
+			if (cast != null)
+			{
+				try
+				{
+					result = cast(result);
+				}
+				catch
+				{
+					castFunctions[targetType] = null;
+				}
+			}
+			return result;
 		}
 	}
 }
