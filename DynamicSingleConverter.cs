@@ -13,8 +13,6 @@ namespace QuickConverter
 {
 	public class DynamicSingleConverter : IValueConverter
 	{
-		private static Dictionary<Type, Func<object, object>> castFunctions = new Dictionary<Type, Func<object, object>>();
-
 		public string ConvertExpression { get; private set; }
 		public string ConvertBackExpression { get; private set; }
 		public Exception LastException { get; private set; }
@@ -75,15 +73,6 @@ namespace QuickConverter
 			if (targetType == typeof(string))
 				return result.ToString();
 
-			Func<object, object> cast;
-			if (!castFunctions.TryGetValue(targetType, out cast))
-			{
-				ParameterExpression par = Expression.Parameter(typeof(object));
-				cast = Expression.Lambda<Func<object, object>>(Expression.Convert(Expression.Dynamic(Binder.Convert(CSharpBinderFlags.ConvertExplicit, targetType, typeof(object)), targetType, par), typeof(object)), par).Compile();
-				castFunctions.Add(targetType, cast);
-			}
-
-			result = cast(result);
 			return result;
 		}
 
