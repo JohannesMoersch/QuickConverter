@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using System.Windows;
 using System.Windows.Data;
 using System.Windows.Markup;
 using System.Xaml;
@@ -199,7 +200,9 @@ namespace QuickConverter
 			else
 			{
 				var targetProvider = serviceProvider.GetService(typeof(IProvideValueTarget)) as IProvideValueTarget;
-				if (targetProvider == null || !(targetProvider.TargetProperty is PropertyInfo))
+				if (targetProvider != null && (targetProvider.TargetObject is Setter))
+					getExpression = false;
+				else if (targetProvider == null || !(targetProvider.TargetProperty is PropertyInfo))
 					getExpression = true;
 				else
 				{
