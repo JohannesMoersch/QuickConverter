@@ -479,7 +479,8 @@ namespace QuickConverter
 
 		internal static void ThrowQuickConverterEvent(QuickConverterEventArgs args)
 		{
-			QuickConverterEvent(args);
+			if (QuickConverterEvent != null)
+				QuickConverterEvent(args);
 		}
 
 		public static event QuickConverterEventHandler QuickConverterEvent;
