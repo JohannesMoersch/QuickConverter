@@ -14,6 +14,8 @@ namespace QuickConverter
 {
 	public class DynamicMultiConverter : IMultiValueConverter
 	{
+		private static Type _namedObjectType = typeof(DependencyObject).Assembly.GetType("MS.Internal.NamedObject", false);
+
 		private static ConcurrentDictionary<Type, Func<object, object>> castFunctions = new ConcurrentDictionary<Type, Func<object, object>>();
 
 		public string ConvertExpression { get; private set; }
@@ -44,7 +46,7 @@ namespace QuickConverter
 		{
 			for (int i = 0; i < values.Length; ++i)
 			{
-				if (PTypes[i] != null && (values[i] == DependencyProperty.UnsetValue || !PTypes[i].IsInstanceOfType(values[i])))
+				if (PTypes[i] != null && (values[i] == DependencyProperty.UnsetValue || _namedObjectType.IsInstanceOfType(values[i]) || !PTypes[i].IsInstanceOfType(values[i])))
 					return DependencyProperty.UnsetValue;
 			}
 
@@ -56,6 +58,7 @@ namespace QuickConverter
 				++ExceptionCount;
 				if (Debugger.IsAttached)
 					Console.WriteLine("QuickMultiConverter Exception (\"" + ConvertExpression + "\") - " + e.Message + (e.InnerException != null ? " (Inner - " + e.InnerException.Message + ")" : ""));
+				EquationTokenizer.ThrowQuickConverterEvent(new QuickConverterEventArgs(QuickConverterEventType.RuntimeConvertException, ConvertExpression));
 				return DependencyProperty.UnsetValue;
 			}
 			finally
@@ -83,6 +86,7 @@ namespace QuickConverter
 					++ExceptionCount;
 					if (Debugger.IsAttached)
 						Console.WriteLine("QuickMultiConverter Exception (\"" + ConvertBackExpression[i] + "\") - " + e.Message + (e.InnerException != null ? " (Inner - " + e.InnerException.Message + ")" : ""));
+					EquationTokenizer.ThrowQuickConverterEvent(new QuickConverterEventArgs(QuickConverterEventType.RuntimeConvertException, ConvertBackExpression[i]));
 					ret[i] = DependencyProperty.UnsetValue;
 				}
 				ret[i] = CastResult(ret[i], targetTypes[i]);

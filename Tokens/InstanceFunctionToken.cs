@@ -64,10 +64,10 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
 			CallSiteBinder binder = Binder.InvokeMember(CSharpBinderFlags.None, methodName, types, dynamicContext ?? typeof(object), new object[arguments.Arguments.Count + 1].Select(val => CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)));
-			Expression dynamicCall = Expression.Dynamic(binder, typeof(object), new[] { (this as IPostToken).Target.GetExpression(parameters, locals, dataContainers, dynamicContext) }.Concat(arguments.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext))));
+			Expression dynamicCall = Expression.Dynamic(binder, typeof(object), new[] { (this as IPostToken).Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label) }.Concat(arguments.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));
 
 			var targetVar = Expression.Variable(typeof(object));
 			var argsVar = Expression.Variable(typeof(object[]));
@@ -82,8 +82,8 @@ namespace QuickConverter.Tokens
 
 			Expression block = Expression.Block(new[] { targetVar, argsVar, methodVar }, new[] 
 				{
-					Expression.Assign(targetVar, (this as IPostToken).Target.GetExpression(parameters, locals, dataContainers, dynamicContext)),
-					Expression.Assign(argsVar, Expression.NewArrayInit(typeof(object), new[] { targetVar }.Concat(arguments.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext))))),
+					Expression.Assign(targetVar, (this as IPostToken).Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label)),
+					Expression.Assign(argsVar, Expression.NewArrayInit(typeof(object), new[] { targetVar }.Concat(arguments.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))))),
 					Expression.Assign(methodVar, Expression.Call(GetMethod, Expression.Constant(methodName, typeof(string)), Expression.Constant(types, typeof(List<Type>)), argsVar)),
 					branch,
 					resultVar

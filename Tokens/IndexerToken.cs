@@ -8,9 +8,9 @@ using Microsoft.CSharp.RuntimeBinder;
 
 namespace QuickConverter.Tokens
 {
-	public class ArrayAccessToken : TokenBase, IPostToken
+	public class IndexerToken : TokenBase, IPostToken
 	{
-		internal ArrayAccessToken()
+		internal IndexerToken()
 		{
 		}
 
@@ -52,14 +52,14 @@ namespace QuickConverter.Tokens
 			if (!new ArgumentListToken('[', ']').TryGetToken(ref temp, out ind))
 				return false;
 			text = text.Substring(i + 1);
-			token = new ArrayAccessToken() { index = ind as ArgumentListToken };
+			token = new IndexerToken() { index = ind as ArgumentListToken };
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
 			CallSiteBinder binder = Binder.GetIndex(CSharpBinderFlags.None, dynamicContext ?? typeof(object), new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null), CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
-			return Expression.Dynamic(binder, typeof(object), new Expression[] { (this as IPostToken).Target.GetExpression(parameters, locals, dataContainers, dynamicContext) }.Concat(index.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext))));
+			return Expression.Dynamic(binder, typeof(object), new Expression[] { (this as IPostToken).Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label) }.Concat(index.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));
 		}
 	}
 }

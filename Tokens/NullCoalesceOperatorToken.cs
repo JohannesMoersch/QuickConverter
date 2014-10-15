@@ -56,10 +56,10 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
-			Expression c = condition.GetExpression(parameters, locals, dataContainers, dynamicContext);
-			Expression n = onNull.GetExpression(parameters, locals, dataContainers, dynamicContext);
+			Expression c = condition.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
+			Expression n = onNull.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
 			return Expression.Coalesce(Expression.Convert(c, typeof(object)), Expression.Convert(n, typeof(object)));
 		}
 	}

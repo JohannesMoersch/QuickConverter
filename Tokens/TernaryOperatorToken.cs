@@ -42,7 +42,7 @@ namespace QuickConverter.Tokens
 						--brackets;
 					else if (brackets == 0)
 					{
-						if (text[i] == '?')
+						if (text[i] == '?' && (i >= text.Length - 1 || (text[i + 1] != '.' && text[i + 1] != '[')))
 						{
 							if (count == 0)
 								qPos = i;
@@ -75,12 +75,12 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
 			CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, typeof(bool), typeof(object));
-			Expression c = condition.GetExpression(parameters, locals, dataContainers, dynamicContext);
-			Expression t = onTrue.GetExpression(parameters, locals, dataContainers, dynamicContext);
-			Expression f = onFalse.GetExpression(parameters, locals, dataContainers, dynamicContext);
+			Expression c = condition.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
+			Expression t = onTrue.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
+			Expression f = onFalse.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
 			return Expression.Condition(Expression.Dynamic(binder, typeof(bool), c), Expression.Convert(t, typeof(object)), Expression.Convert(f, typeof(object)));
 		}
 	}

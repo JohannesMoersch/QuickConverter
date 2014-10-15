@@ -41,9 +41,10 @@ namespace QuickConverter
 				};
 			postValueTypeInstanceList = new TokenBase[]
 				{
+					new NullPropagatingToken(),
 					new InstanceFunctionToken(),
 					new InstanceMemberToken(),
-					new ArrayAccessToken(),
+					new IndexerToken(),
 					new IsToken(),
 					new AsToken()
 				};
@@ -398,6 +399,9 @@ namespace QuickConverter
 					break;
 			}
 
+			if (token is IPostToken)
+				token = new PostTokenChainToken(token);
+
 			return true;
 		}
 
@@ -467,9 +471,17 @@ namespace QuickConverter
 			{
 				if (Debugger.IsAttached)
 					Console.WriteLine("EquationTokenizer Exception (\"" + expression + "\") - Failed to tokenize.");
+				ThrowQuickConverterEvent(new QuickConverterEventArgs(QuickConverterEventType.TokenizationFailure, expression));
 				throw new Exception("Failed to tokenize expression \"" + expression + "\". Did you forget a '$'?");
 			}
 			return token;
 		}
+
+		internal static void ThrowQuickConverterEvent(QuickConverterEventArgs args)
+		{
+			QuickConverterEvent(args);
+		}
+
+		public static event QuickConverterEventHandler QuickConverterEvent;
 	}
 }

@@ -54,14 +54,14 @@ namespace QuickConverter.Tokens
 			throw new NotImplementedException();
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
 			if (Operation == Operator.And || Operation == Operator.AlternateAnd)
-				return Expression.Convert(Expression.AndAlso(Expression.Convert(left.GetExpression(parameters, locals, dataContainers, dynamicContext), typeof(bool)), Expression.Convert(right.GetExpression(parameters, locals, dataContainers, dynamicContext), typeof(bool))), typeof(object));
+				return Expression.Convert(Expression.AndAlso(Expression.Convert(left.GetExpression(parameters, locals, dataContainers, dynamicContext, label), typeof(bool)), Expression.Convert(right.GetExpression(parameters, locals, dataContainers, dynamicContext, label), typeof(bool))), typeof(object));
 			if (Operation == Operator.Or)
-				return Expression.Convert(Expression.OrElse(Expression.Convert(left.GetExpression(parameters, locals, dataContainers, dynamicContext), typeof(bool)), Expression.Convert(right.GetExpression(parameters, locals, dataContainers, dynamicContext), typeof(bool))), typeof(object));
+				return Expression.Convert(Expression.OrElse(Expression.Convert(left.GetExpression(parameters, locals, dataContainers, dynamicContext, label), typeof(bool)), Expression.Convert(right.GetExpression(parameters, locals, dataContainers, dynamicContext, label), typeof(bool))), typeof(object));
 			CallSiteBinder binder = Binder.BinaryOperation(CSharpBinderFlags.None, types[(int)Operation], dynamicContext ?? typeof(object), new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null), CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
-			return Expression.Dynamic(binder, typeof(object), left.GetExpression(parameters, locals, dataContainers, dynamicContext), right.GetExpression(parameters, locals, dataContainers, dynamicContext));
+			return Expression.Dynamic(binder, typeof(object), left.GetExpression(parameters, locals, dataContainers, dynamicContext, label), right.GetExpression(parameters, locals, dataContainers, dynamicContext, label));
 		}
 	}
 }

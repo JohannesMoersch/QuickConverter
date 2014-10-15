@@ -31,9 +31,9 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
-			return Expression.Convert(Expression.TypeIs(Target.GetExpression(parameters, locals, dataContainers, dynamicContext), type), typeof(object));
+			return Expression.Convert(Expression.TypeIs(Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label), type), typeof(object));
 		}
 	}
 }

@@ -171,9 +171,9 @@ namespace QuickConverter.Tokens
 		{
 			parameters = new List<ParameterExpression>();
 			dataContainers = new List<DataContainer>();
-			return GetExpression(parameters, new Dictionary<string, ConstantExpression>(), dataContainers, dynamicContext);
+			return GetExpression(parameters, new Dictionary<string, ConstantExpression>(), dataContainers, dynamicContext, null);
 		}
 
-		internal abstract Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext);
+		internal abstract Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label);
 	}
 }

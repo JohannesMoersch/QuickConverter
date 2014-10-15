@@ -55,9 +55,11 @@
     <Compile Include="Operator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuickConverter.cs" />
+    <Compile Include="QuickConverterEventArgs.cs" />
+    <Compile Include="QuickConverterEventType.cs" />
     <Compile Include="QuickMultiConverter.cs" />
     <Compile Include="Tokens\ArgumentListToken.cs" />
-    <Compile Include="Tokens\ArrayAccessToken.cs" />
+    <Compile Include="Tokens\IndexerToken.cs" />
     <Compile Include="Tokens\AssignmentToken.cs" />
     <Compile Include="Tokens\AsToken.cs" />
     <Compile Include="Tokens\BinaryOperatorToken.cs" />
@@ -70,7 +72,9 @@
     <Compile Include="Tokens\IsToken.cs" />
     <Compile Include="Tokens\LambdaToken.cs" />
     <Compile Include="Tokens\NullCoalesceOperatorToken.cs" />
+    <Compile Include="Tokens\NullPropagatingToken.cs" />
     <Compile Include="Tokens\ParameterToken.cs" />
+    <Compile Include="Tokens\PostTokenChainToken.cs" />
     <Compile Include="Tokens\StaticFunctionToken.cs" />
     <Compile Include="Tokens\StaticMemberToken.cs" />
     <Compile Include="Tokens\TernaryOperatorToken.cs" />
