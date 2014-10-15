@@ -24,7 +24,7 @@ namespace QuickConverter.Tokens
 
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
-			label = Expression.Label((this as IPostToken).Target.ReturnType);
+			label = Expression.Label(typeof(object));
 			return Expression.Label(label, (this as IPostToken).Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label));
 		}
 	}
