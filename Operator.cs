@@ -5,7 +5,7 @@ using System.Text;
 
 namespace QuickConverter
 {
-	internal enum Operator
+	public enum Operator
 	{
 		Positive = 0,
 		Negative = 1,

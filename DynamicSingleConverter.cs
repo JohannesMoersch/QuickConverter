@@ -23,16 +23,21 @@ namespace QuickConverter
 		public Exception LastException { get; private set; }
 		public int ExceptionCount { get; private set; }
 
+		public string ConvertExpressionDebugView { get; private set; }
+		public string ConvertBackExpressionDebugView { get; private set; }
+
 		public Type PType { get; private set; }
+
+		public Type ValueType { get; private set; }
 
 		public object[] Values { get { return _values; } }
 
-		private Func<object, object[], object> _converter;
-		private Func<object, object[], object> _convertBack;
+		private Func<object, object[], object, object> _converter;
+		private Func<object, object[], object, object> _convertBack;
 		private object[] _values;
 		private DataContainer[] _toDataContainers;
 		private DataContainer[] _fromDataContainers;
-		public DynamicSingleConverter(Func<object, object[], object> converter, Func<object, object[], object> convertBack, object[] values, string convertExp, string convertBackExp, Type pType, DataContainer[] toDataContainers, DataContainer[] fromDataContainers)
+		public DynamicSingleConverter(Func<object, object[], object, object> converter, Func<object, object[], object, object> convertBack, object[] values, string convertExp, string convertExpDebug, string convertBackExp, string convertBackExpDebug, Type pType, Type vType, DataContainer[] toDataContainers, DataContainer[] fromDataContainers)
 		{
 			_converter = converter;
 			_convertBack = convertBack;
@@ -41,25 +46,39 @@ namespace QuickConverter
 			_fromDataContainers = fromDataContainers;
 			ConvertExpression = convertExp;
 			ConvertBackExpression = convertBackExp;
+			ConvertExpressionDebugView = convertExpDebug;
+			ConvertBackExpressionDebugView = convertBackExpDebug;
 			PType = pType;
+			ValueType = vType;
 		}
 
-		private object DoConversion(object value, Type targetType, Func<object, object[], object> func, bool convertingBack)
+		private object DoConversion(object value, Type targetType, object parameter, Func<object, object[], object, object> func, bool convertingBack)
 		{
-			if (!convertingBack && PType != null && (value == DependencyProperty.UnsetValue || _namedObjectType.IsInstanceOfType(value) || !PType.IsInstanceOfType(value)))
-				return DependencyProperty.UnsetValue;
+			if (convertingBack)
+			{
+				if (ValueType != null && !ValueType.IsInstanceOfType(value))
+					return System.Windows.Data.Binding.DoNothing;
+			}
+			else
+			{
+				if (value == DependencyProperty.UnsetValue || _namedObjectType.IsInstanceOfType(value) || (PType != null && !PType.IsInstanceOfType(value)))
+					return DependencyProperty.UnsetValue;
+			}
 
 			object result = value;
 			if (func != null)
 			{
-				try { result = func(result, _values); }
+				try { result = func(result, _values, parameter); }
 				catch (Exception e)
 				{
 					LastException = e;
 					++ExceptionCount;
 					if (Debugger.IsAttached)
 						Console.WriteLine("QuickMultiConverter Exception (\"" + (convertingBack ? ConvertBackExpression : ConvertExpression) + "\") - " + e.Message + (e.InnerException != null ? " (Inner - " + e.InnerException.Message + ")" : ""));
-					EquationTokenizer.ThrowQuickConverterEvent(new QuickConverterEventArgs(QuickConverterEventType.RuntimeConvertException, (convertingBack ? ConvertBackExpression : ConvertExpression)));
+					if (convertingBack)
+						EquationTokenizer.ThrowQuickConverterEvent(new RuntimeSingleConvertExceptionEventArgs(ConvertBackExpression, ConvertBackExpressionDebugView, null, value, _values, parameter, this, e));
+					else
+						EquationTokenizer.ThrowQuickConverterEvent(new RuntimeSingleConvertExceptionEventArgs(ConvertExpression, ConvertExpressionDebugView, value, null, _values, parameter, this, e));
 					return DependencyProperty.UnsetValue; 
 				}
 				finally
@@ -102,12 +121,12 @@ namespace QuickConverter
 
 		public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
 		{
-			return DoConversion(value, targetType, _converter, false);
+			return DoConversion(value, targetType, parameter, _converter, false);
 		}
 
 		public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
 		{
-			return DoConversion(value, targetType, _convertBack, true);
+			return DoConversion(value, targetType, parameter, _convertBack, true);
 		}
 	}
 }

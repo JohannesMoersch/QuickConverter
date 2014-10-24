@@ -15,11 +15,13 @@ namespace QuickConverter.Tokens
 			this.type = type;
 		}
 
-		public override Type ReturnType { get { return typeof(object); } } 
+		public override Type ReturnType { get { return typeof(object); } }
 
-		internal string Name { get; private set; }
-		internal MemberInfo Member { get; private set; }
-		internal TokenBase Value { get; private set; }
+		public override TokenBase[] Children { get { return new[] { Value }; } }
+
+		public string Name { get; private set; }
+		public MemberInfo Member { get; private set; }
+		public TokenBase Value { get; private set; }
 
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{

@@ -14,10 +14,18 @@ namespace QuickConverter.Tokens
 		{
 		}
 
-		public override Type ReturnType { get { return typeof(object); } } 
+		public override Type ReturnType { get { return typeof(object); } }
 
-		private string memberName;
-		TokenBase IPostToken.Target { get; set; }
+		public override TokenBase[] Children { get { return new[] { Target }; } }
+
+		public string MemberName { get; private set; }
+		public TokenBase Target { get; private set; }
+
+		internal override void SetPostTarget(TokenBase target)
+		{
+			Target = target;
+		}
+
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
 			token = null;
@@ -31,14 +39,14 @@ namespace QuickConverter.Tokens
 				return false;
 			string name = temp.Substring(1, count - 1);
 			text = temp.Substring(count);
-			token = new InstanceMemberToken() { memberName = name };
+			token = new InstanceMemberToken() { MemberName = name };
 			return true;
 		}
 
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
-			CallSiteBinder binder = Binder.GetMember(CSharpBinderFlags.None, memberName, dynamicContext ?? typeof(object), new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
-			return Expression.Dynamic(binder, typeof(object), (this as IPostToken).Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label));
+			CallSiteBinder binder = Binder.GetMember(CSharpBinderFlags.None, MemberName, dynamicContext ?? typeof(object), new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
+			return Expression.Dynamic(binder, typeof(object), Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label));
 		}
 	}
 }

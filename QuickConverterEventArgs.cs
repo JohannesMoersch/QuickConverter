@@ -7,15 +7,14 @@ namespace QuickConverter
 {
 	public delegate void QuickConverterEventHandler(QuickConverterEventArgs args);
 
-	public class QuickConverterEventArgs
+	public abstract class QuickConverterEventArgs
 	{
-		public QuickConverterEventType Type { get; private set; }
+		public abstract QuickConverterEventType Type { get; }
 
 		public string Expression { get; private set; }
 
-		internal QuickConverterEventArgs(QuickConverterEventType type, string expression)
+		internal QuickConverterEventArgs(string expression)
 		{
-			Type = type;
 			Expression = expression;
 		}
 	}

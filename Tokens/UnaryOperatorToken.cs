@@ -14,7 +14,9 @@ namespace QuickConverter.Tokens
 		{
 		}
 
-		public override Type ReturnType { get { return typeof(object); } } 
+		public override Type ReturnType { get { return typeof(object); } }
+
+		public override TokenBase[] Children { get { return new[] { value }; } }
 
 		private Operator operation;
 		private TokenBase value;

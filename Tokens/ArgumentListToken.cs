@@ -15,7 +15,11 @@ namespace QuickConverter.Tokens
 		private bool allowSubLists;
 		private bool allowTypeCasts;
 
-		public override Type ReturnType { get { return typeof(object); } } 
+		public override Type ReturnType { get { return typeof(object); } }
+
+		public override TokenBase[] Children { get { return Arguments.ToArray(); } }
+
+		public TokenBase[] Arguments { get; private set; }
 
 		internal ArgumentListToken(char open, char close, Type assignmentType)
 		{
@@ -46,8 +50,6 @@ namespace QuickConverter.Tokens
 			allowSubLists = false;
 			this.allowTypeCasts = allowTypeCasts;
 		}
-
-		internal List<TokenBase> Arguments { get; private set; }
 
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
@@ -103,7 +105,7 @@ namespace QuickConverter.Tokens
 						return false;
 				}
 			}
-			token = new ArgumentListToken('\0', '\0') { Arguments = list };
+			token = new ArgumentListToken('\0', '\0') { Arguments = list.ToArray() };
 			text = temp;
 			return true;
 		}

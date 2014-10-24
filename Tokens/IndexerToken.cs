@@ -14,10 +14,18 @@ namespace QuickConverter.Tokens
 		{
 		}
 
-		public override Type ReturnType { get { return typeof(object); } } 
+		public override Type ReturnType { get { return typeof(object); } }
 
-		private ArgumentListToken index;
-		TokenBase IPostToken.Target { get; set; }
+		public override TokenBase[] Children { get { return new[] { Indices, Target }; } }
+
+		public ArgumentListToken Indices { get; private set; }
+		public TokenBase Target { get; private set; }
+
+		internal override void SetPostTarget(TokenBase target)
+		{
+			Target = target;
+		}
+		
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
 			token = null;
@@ -52,14 +60,14 @@ namespace QuickConverter.Tokens
 			if (!new ArgumentListToken('[', ']').TryGetToken(ref temp, out ind))
 				return false;
 			text = text.Substring(i + 1);
-			token = new IndexerToken() { index = ind as ArgumentListToken };
+			token = new IndexerToken() { Indices = ind as ArgumentListToken };
 			return true;
 		}
 
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
 			CallSiteBinder binder = Binder.GetIndex(CSharpBinderFlags.None, dynamicContext ?? typeof(object), new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null), CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
-			return Expression.Dynamic(binder, typeof(object), new Expression[] { (this as IPostToken).Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label) }.Concat(index.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));
+			return Expression.Dynamic(binder, typeof(object), new Expression[] { Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label) }.Concat(Indices.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));
 		}
 	}
 }

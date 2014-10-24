@@ -5,10 +5,9 @@ using System.Text;
 
 namespace QuickConverter
 {
-	public enum QuickConverterEventType
+	public enum ConverterParameterMode
 	{
-		TokenizationSuccess,
-		TokenizationFailure,
-		RuntimeConvertException,
+		Parameter,
+		Values
 	}
 }

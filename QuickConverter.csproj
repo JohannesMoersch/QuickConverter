@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binding.cs" />
+    <Compile Include="ConverterParameterMode.cs" />
     <Compile Include="DataContainer.cs" />
     <Compile Include="DynamicMultiConverter.cs" />
     <Compile Include="DynamicSingleConverter.cs" />
@@ -58,6 +59,10 @@
     <Compile Include="QuickConverterEventArgs.cs" />
     <Compile Include="QuickConverterEventType.cs" />
     <Compile Include="QuickMultiConverter.cs" />
+    <Compile Include="RuntimeMultiConvertExceptionEventArgs.cs" />
+    <Compile Include="RuntimeSingleConvertExceptionEventArgs.cs" />
+    <Compile Include="TokenizationFailureEventArgs.cs" />
+    <Compile Include="TokenizationSuccessEventArgs.cs" />
     <Compile Include="Tokens\ArgumentListToken.cs" />
     <Compile Include="Tokens\IndexerToken.cs" />
     <Compile Include="Tokens\AssignmentToken.cs" />
@@ -78,6 +83,7 @@
     <Compile Include="Tokens\StaticFunctionToken.cs" />
     <Compile Include="Tokens\StaticMemberToken.cs" />
     <Compile Include="Tokens\TernaryOperatorToken.cs" />
+    <Compile Include="Tokens\ThrowToken.cs" />
     <Compile Include="Tokens\TokenBase.cs" />
     <Compile Include="Tokens\TypeCastToken.cs" />
     <Compile Include="Tokens\TypeofToken.cs" />

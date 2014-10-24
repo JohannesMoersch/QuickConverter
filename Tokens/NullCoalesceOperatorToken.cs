@@ -14,10 +14,12 @@ namespace QuickConverter.Tokens
 		{
 		}
 
-		public override Type ReturnType { get { return condition.ReturnType == onNull.ReturnType ? condition.ReturnType : typeof(object); } } 
+		public override Type ReturnType { get { return Condition.ReturnType == OnNull.ReturnType ? Condition.ReturnType : typeof(object); } }
 
-		private TokenBase condition;
-		private TokenBase onNull;
+		public override TokenBase[] Children { get { return new[] { Condition, OnNull }; } }
+
+		public TokenBase Condition { get; private set; }
+		public TokenBase OnNull { get; private set; }
 
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
@@ -51,15 +53,15 @@ namespace QuickConverter.Tokens
 				return false;
 			if (!EquationTokenizer.TryEvaluateExpression(text.Substring(qPos + 2).Trim(), out right))
 				return false;
-			token = new NullCoalesceOperatorToken() { condition = left, onNull = right };
+			token = new NullCoalesceOperatorToken() { Condition = left, OnNull = right };
 			text = "";
 			return true;
 		}
 
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
-			Expression c = condition.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
-			Expression n = onNull.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
+			Expression c = Condition.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
+			Expression n = OnNull.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
 			return Expression.Coalesce(Expression.Convert(c, typeof(object)), Expression.Convert(n, typeof(object)));
 		}
 	}

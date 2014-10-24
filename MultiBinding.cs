@@ -57,25 +57,25 @@ namespace QuickConverter
 		/// <summary>Creates a constant parameter. This can be accessed inside the converter as $V9.</summary>
 		public object V9 { get; set; }
 
-		/// <summary>The converter will return DependencyObject.Unset during conversion if P is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
+		/// <summary>The converter will return DependencyObject.Unset during conversion if P0 is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
 		public object P0Type { get; set; }
-		/// <summary>The converter will return DependencyObject.Unset during conversion if P is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
+		/// <summary>The converter will return DependencyObject.Unset during conversion if P1 is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
 		public object P1Type { get; set; }
-		/// <summary>The converter will return DependencyObject.Unset during conversion if P is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
+		/// <summary>The converter will return DependencyObject.Unset during conversion if P2 is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
 		public object P2Type { get; set; }
-		/// <summary>The converter will return DependencyObject.Unset during conversion if P is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
+		/// <summary>The converter will return DependencyObject.Unset during conversion if P3 is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
 		public object P3Type { get; set; }
-		/// <summary>The converter will return DependencyObject.Unset during conversion if P is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
+		/// <summary>The converter will return DependencyObject.Unset during conversion if P4 is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
 		public object P4Type { get; set; }
-		/// <summary>The converter will return DependencyObject.Unset during conversion if P is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
+		/// <summary>The converter will return DependencyObject.Unset during conversion if P5 is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
 		public object P5Type { get; set; }
-		/// <summary>The converter will return DependencyObject.Unset during conversion if P is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
+		/// <summary>The converter will return DependencyObject.Unset during conversion if P6 is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
 		public object P6Type { get; set; }
-		/// <summary>The converter will return DependencyObject.Unset during conversion if P is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
+		/// <summary>The converter will return DependencyObject.Unset during conversion if P7 is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
 		public object P7Type { get; set; }
-		/// <summary>The converter will return DependencyObject.Unset during conversion if P is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
+		/// <summary>The converter will return DependencyObject.Unset during conversion if P8 is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
 		public object P8Type { get; set; }
-		/// <summary>The converter will return DependencyObject.Unset during conversion if P is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
+		/// <summary>The converter will return DependencyObject.Unset during conversion if P9 is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
 		public object P9Type { get; set; }
 
 		/// <summary>
@@ -143,6 +143,17 @@ namespace QuickConverter
 		/// The bound parameters $P0-$P9 cannot be accessed when converting back.
 		/// </summary>
 		public string ConvertBack9 { get; set; }
+
+		/// <summary>
+		/// The conventional parameter passed into converters. 
+		/// This is accessible as $par inside converter expressions.
+		/// </summary>
+		public object ConverterParameter { get; set; }
+
+		/// <summary>
+		/// This chooses whether to pass the converter parameter or V0-V9 as an array into the external converter.
+		/// </summary>
+		public ConverterParameterMode ExternalConverterParameterMode { get; set; }
 
 		private bool _modeSet = false;
 		private BindingMode _mode;
@@ -221,6 +232,7 @@ namespace QuickConverter
 
 			if (ExternalConverter == null)
 			{
+				holder.ConverterParameter = ConverterParameter;
 				string[] parameterOrder;
 				holder.Converter = new QuickMultiConverter()
 				{
@@ -271,6 +283,10 @@ namespace QuickConverter
 			}
 			else
 			{
+				if (ExternalConverterParameterMode == ConverterParameterMode.Parameter)
+					holder.ConverterParameter = ConverterParameter;
+				else
+					holder.ConverterParameter = new object[] { V0, V1, V2, V3, V4, V5, V6, V7, V8, V9 };
 				holder.Converter = ExternalConverter;
 				for (int i = 0; i <= 9; ++i)
 				{

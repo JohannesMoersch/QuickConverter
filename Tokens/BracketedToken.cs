@@ -12,9 +12,12 @@ namespace QuickConverter.Tokens
 		{
 		}
 
-		public override Type ReturnType { get { return value.ReturnType; } } 
+		public override Type ReturnType { get { return Value.ReturnType; } }
 
-		private TokenBase value;
+		public override TokenBase[] Children { get { return new[] { Value }; } }
+
+		public TokenBase Value { get; private set; }
+
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
 			token = null;
@@ -46,13 +49,13 @@ namespace QuickConverter.Tokens
 			if (!EquationTokenizer.TryEvaluateExpression(text.Substring(1, i - 1), out valToken))
 				return false;
 			text = text.Substring(i + 1);
-			token = new BracketedToken() { value = valToken };
+			token = new BracketedToken() { Value = valToken };
 			return true;
 		}
 
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
-			return value.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
+			return Value.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
 		}
 	}
 }

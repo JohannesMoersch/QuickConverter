@@ -15,11 +15,16 @@ namespace QuickConverter.Tokens
 			this.parseTarget = parseTarget;
 		}
 
-		public override Type ReturnType { get { return TargetType; } } 
+		public override Type ReturnType { get { return TargetType; } }
+
+		public override TokenBase[] Children { get { return new[] { Target }; } }
 
 		public Type TargetType { get; private set; }
-		public TokenBase Target { get; set; }
+
+		public TokenBase Target { get; internal set; }
+
 		private bool parseTarget;
+
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
 			token = null;

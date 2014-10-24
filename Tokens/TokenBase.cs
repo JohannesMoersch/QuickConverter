@@ -163,9 +163,25 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
+		public TokenBase[] FlattenTree()
+		{
+			return GetChildren().ToArray();
+		}
+
+		internal IEnumerable<TokenBase> GetChildren()
+		{
+			return new[] { this }.Concat(Children.SelectMany(t => t.GetChildren()));
+		}
+
+		internal virtual void SetPostTarget(TokenBase target)
+		{
+		}
+		
 		internal abstract bool TryGetToken(ref string text, out TokenBase token);
 
 		public abstract Type ReturnType { get; }
+
+		public abstract TokenBase[] Children { get; }
 
 		public Expression GetExpression(out List<ParameterExpression> parameters, out List<DataContainer> dataContainers, Type dynamicContext = null)
 		{

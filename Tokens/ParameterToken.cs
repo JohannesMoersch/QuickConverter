@@ -12,7 +12,9 @@ namespace QuickConverter.Tokens
 		{
 		}
 
-		public override Type ReturnType { get { return typeof(object); } } 
+		public override Type ReturnType { get { return typeof(object); } }
+
+		public override TokenBase[] Children { get { return new TokenBase[0]; } }
 
 		public string Name { get; private set; }
 

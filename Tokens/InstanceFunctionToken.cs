@@ -22,12 +22,20 @@ namespace QuickConverter.Tokens
 		{
 		}
 
-		public override Type ReturnType { get { return typeof(object); } } 
+		public override Type ReturnType { get { return typeof(object); } }
 
-		private string methodName;
-		private ArgumentListToken arguments;
-		private List<Type> types;
-		TokenBase IPostToken.Target { get; set; }
+		public override TokenBase[] Children { get { return new[] { Arguments, Target }; } }
+
+		public string MethodName { get; private set; }
+		public ArgumentListToken Arguments { get; private set; }
+		public Type[] Types { get; private set; }
+		public TokenBase Target { get; private set; }
+
+		internal override void SetPostTarget(TokenBase target)
+		{
+			Target = target;
+		}
+
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
 			token = null;
@@ -60,14 +68,14 @@ namespace QuickConverter.Tokens
 			if (!new ArgumentListToken('(', ')').TryGetToken(ref temp, out args))
 				return false;
 			text = temp;
-			token = new InstanceFunctionToken() { arguments = args as ArgumentListToken, methodName = name, types = typeArgs };
+			token = new InstanceFunctionToken() { Arguments = args as ArgumentListToken, MethodName = name, Types = typeArgs != null ? typeArgs.ToArray() : null };
 			return true;
 		}
 
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
-			CallSiteBinder binder = Binder.InvokeMember(CSharpBinderFlags.None, methodName, types, dynamicContext ?? typeof(object), new object[arguments.Arguments.Count + 1].Select(val => CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)));
-			Expression dynamicCall = Expression.Dynamic(binder, typeof(object), new[] { (this as IPostToken).Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label) }.Concat(arguments.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));
+			CallSiteBinder binder = Binder.InvokeMember(CSharpBinderFlags.None, MethodName, Types, dynamicContext ?? typeof(object), new object[Arguments.Arguments.Length + 1].Select(val => CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)));
+			Expression dynamicCall = Expression.Dynamic(binder, typeof(object), new[] { Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label) }.Concat(Arguments.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));
 
 			var targetVar = Expression.Variable(typeof(object));
 			var argsVar = Expression.Variable(typeof(object[]));
@@ -82,9 +90,9 @@ namespace QuickConverter.Tokens
 
 			Expression block = Expression.Block(new[] { targetVar, argsVar, methodVar }, new[] 
 				{
-					Expression.Assign(targetVar, (this as IPostToken).Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label)),
-					Expression.Assign(argsVar, Expression.NewArrayInit(typeof(object), new[] { targetVar }.Concat(arguments.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))))),
-					Expression.Assign(methodVar, Expression.Call(GetMethod, Expression.Constant(methodName, typeof(string)), Expression.Constant(types, typeof(List<Type>)), argsVar)),
+					Expression.Assign(targetVar, Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label)),
+					Expression.Assign(argsVar, Expression.NewArrayInit(typeof(object), new[] { targetVar }.Concat(Arguments.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))))),
+					Expression.Assign(methodVar, Expression.Call(GetMethod, Expression.Constant(MethodName, typeof(string)), Expression.Constant(Types, typeof(List<Type>)), argsVar)),
 					branch,
 					resultVar
 				});

@@ -13,9 +13,12 @@ namespace QuickConverter.Tokens
 		{
 		}
 
-		public override Type ReturnType { get { return value != null ? value.GetType() : typeof(object); } } 
+		public override Type ReturnType { get { return Value != null ? Value.GetType() : typeof(object); } }
 
-		private object value;
+		public override TokenBase[] Children { get { return new TokenBase[0]; } }
+
+		public object Value { get; private set; }
+
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
 			token = null;
@@ -32,30 +35,30 @@ namespace QuickConverter.Tokens
 				{
 					if (count > 2)
 						throw new Exception("The string '" + text.Substring(1, count - 1) + "' can not be interpreted as a character.");
-					token = new ConstantToken() { value = text[1] };
+					token = new ConstantToken() { Value = text[1] };
 					++count;
 				}
 				else
-					token = new ConstantToken() { value = text.Substring(1, count - 1) };
+					token = new ConstantToken() { Value = text.Substring(1, count - 1) };
 				text = text.Substring(count + 1);
 				return true;
 			}
 			if (text.Length >= 4 && text.Substring(0, 4).ToLower() == "true")
 			{
 				text = text.Substring(4);
-				token = new ConstantToken() { value = true };
+				token = new ConstantToken() { Value = true };
 				return true;
 			}
 			if (text.Length >= 5 && text.Substring(0, 5).ToLower() == "false")
 			{
 				text = text.Substring(5);
-				token = new ConstantToken() { value = false };
+				token = new ConstantToken() { Value = false };
 				return true;
 			}
 			if (text.Length >= 4 && text.Substring(0, 4).ToLower() == "null")
 			{
 				text = text.Substring(4);
-				token = new ConstantToken() { value = null };
+				token = new ConstantToken() { Value = null };
 				return true;
 			}
 			{
@@ -115,7 +118,7 @@ namespace QuickConverter.Tokens
 					if (ret != null)
 					{
 						text = text.Substring(count);
-						token = new ConstantToken() { value = ret };
+						token = new ConstantToken() { Value = ret };
 						return true;
 					}
 					--count;
@@ -127,14 +130,14 @@ namespace QuickConverter.Tokens
 					if (Double.TryParse(temp, NumberStyles.Any, new CultureInfo("en-us"), out val1))
 					{
 						text = text.Substring(count);
-						token = new ConstantToken() { value = val1 };
+						token = new ConstantToken() { Value = val1 };
 						return true;
 					}
 				}
 				else if (Int32.TryParse(temp, NumberStyles.Any, new CultureInfo("en-us"), out val2))
 				{
 					text = text.Substring(count);
-					token = new ConstantToken() { value = val2 };
+					token = new ConstantToken() { Value = val2 };
 					return true;
 				}
 			}
@@ -143,7 +146,7 @@ namespace QuickConverter.Tokens
 
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
-			return Expression.Constant(value, typeof(object));
+			return Expression.Constant(Value, typeof(object));
 		}
 	}
 }

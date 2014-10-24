@@ -18,11 +18,13 @@ namespace QuickConverter.Tokens
 		{
 		}
 
-		public override Type ReturnType { get { return typeof(object); } } 
+		public override Type ReturnType { get { return typeof(object); } }
 
-		private ArgumentListToken Arguments;
-		private TokenBase Value;
-		private bool lambda;
+		public override TokenBase[] Children { get { return new[] { Value, Arguments }; } }
+
+		public ArgumentListToken Arguments { get; private set; }
+		public TokenBase Value { get; private set; }
+		public bool Lambda { get; private set; }
 
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
@@ -43,13 +45,13 @@ namespace QuickConverter.Tokens
 			if (!EquationTokenizer.TryEvaluateExpression(temp, out method))
 				return false;
 			text = "";
-			token = new LambdaToken() { Arguments = arguments as ArgumentListToken, Value = method, lambda = lambda };
+			token = new LambdaToken() { Arguments = arguments as ArgumentListToken, Value = method, Lambda = lambda };
 			return true;
 		}
 
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
-			if (lambda)
+			if (Lambda)
 			{
 				List<Tuple<string, Type>> pars = new List<Tuple<string, Type>>();
 				foreach (TokenBase token in Arguments.Arguments)

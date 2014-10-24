@@ -12,10 +12,18 @@ namespace QuickConverter.Tokens
 		{
 		}
 
-		public override Type ReturnType { get { return typeof(bool); } } 
+		public override Type ReturnType { get { return typeof(bool); } }
 
-		public TokenBase Target { get; set; }
-		private Type type;
+		public override TokenBase[] Children { get { return new[] { Target }; } }
+
+		public TokenBase Target { get; private set; }
+		public Type Type { get; private set; }
+
+		internal override void SetPostTarget(TokenBase target)
+		{
+			Target = target;
+		}
+
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
 			token = null;
@@ -27,13 +35,13 @@ namespace QuickConverter.Tokens
 			if (name == null || (name.Item2.Length != 0 && name.Item2[0] == '.'))
 				return false;
 			text = name.Item2.TrimStart();
-			token = new IsToken() { type = name.Item1 as Type };
+			token = new IsToken() { Type = name.Item1 as Type };
 			return true;
 		}
 
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
-			return Expression.Convert(Expression.TypeIs(Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label), type), typeof(object));
+			return Expression.Convert(Expression.TypeIs(Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label), Type), typeof(object));
 		}
 	}
 }

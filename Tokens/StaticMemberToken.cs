@@ -13,9 +13,12 @@ namespace QuickConverter.Tokens
 		{
 		}
 
-		public override Type ReturnType { get { return member is FieldInfo ? (member as FieldInfo).FieldType : (member as PropertyInfo).PropertyType; } } 
+		public override Type ReturnType { get { return Member is FieldInfo ? (Member as FieldInfo).FieldType : (Member as PropertyInfo).PropertyType; } }
 
-		private MemberInfo member;
+		public override TokenBase[] Children { get { return new TokenBase[0]; } }
+
+		public MemberInfo Member { get; private set; }
+
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
 			token = null;
@@ -23,13 +26,13 @@ namespace QuickConverter.Tokens
 			if (tuple == null)
 				return false;
 			text = tuple.Item2;
-			token = new StaticMemberToken() { member = tuple.Item1 as MemberInfo };
+			token = new StaticMemberToken() { Member = tuple.Item1 as MemberInfo };
 			return true;
 		}
 
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
-			return Expression.Convert(Expression.MakeMemberAccess(null, member), typeof(object));
+			return Expression.Convert(Expression.MakeMemberAccess(null, Member), typeof(object));
 		}
 	}
 }

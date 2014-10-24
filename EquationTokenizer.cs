@@ -37,7 +37,8 @@ namespace QuickConverter
 					new LambdaToken(),
 					new BracketedToken(),
 					new TypeCastToken(),
-					new TypeofToken()
+					new TypeofToken(),
+					new ThrowToken()
 				};
 			postValueTypeInstanceList = new TokenBase[]
 				{
@@ -388,7 +389,7 @@ namespace QuickConverter
 				{
 					if (type.TryGetToken(ref temp, out newToken))
 					{
-						(newToken as IPostToken).Target = token;
+						newToken.SetPostTarget(token);
 						token = newToken;
 						text = temp;
 						cont = true;
@@ -471,9 +472,10 @@ namespace QuickConverter
 			{
 				if (Debugger.IsAttached)
 					Console.WriteLine("EquationTokenizer Exception (\"" + expression + "\") - Failed to tokenize.");
-				ThrowQuickConverterEvent(new QuickConverterEventArgs(QuickConverterEventType.TokenizationFailure, expression));
+				ThrowQuickConverterEvent(new TokenizationFailureEventArgs(expression));
 				throw new Exception("Failed to tokenize expression \"" + expression + "\". Did you forget a '$'?");
 			}
+			ThrowQuickConverterEvent(new TokenizationSuccessEventArgs(expression, token));
 			return token;
 		}
 

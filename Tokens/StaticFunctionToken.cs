@@ -16,10 +16,13 @@ namespace QuickConverter.Tokens
 		{
 		}
 
-		public override Type ReturnType { get { return method.ReturnType; } } 
+		public override Type ReturnType { get { return Method.ReturnType; } }
 
-		private MethodInfo method;
-		private ArgumentListToken arguments;
+		public override TokenBase[] Children { get { return new[] { Arguments }; } }
+
+		public MethodInfo Method { get; private set; }
+		public ArgumentListToken Arguments { get; private set; }
+
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
 			token = null;
@@ -31,12 +34,12 @@ namespace QuickConverter.Tokens
 				TokenBase args;
 				if (!new ArgumentListToken('(', ')').TryGetToken(ref temp, out args))
 					continue;
-				if ((args as ArgumentListToken).Arguments.Count <= (method.Item1 as MethodInfo).GetParameters().Length)
+				if ((args as ArgumentListToken).Arguments.Length <= (method.Item1 as MethodInfo).GetParameters().Length)
 				{
 					bool good = true;
 					for (int i = 0; i < (method.Item1 as MethodInfo).GetParameters().Length; ++i)
 					{
-						if (i < (args as ArgumentListToken).Arguments.Count)
+						if (i < (args as ArgumentListToken).Arguments.Length)
 						{
 							if ((args as ArgumentListToken).Arguments[i].ReturnType.IsAssignableFrom((method.Item1 as MethodInfo).GetParameters()[i].ParameterType) || (method.Item1 as MethodInfo).GetParameters()[i].ParameterType.IsAssignableFrom((args as ArgumentListToken).Arguments[i].ReturnType))
 								continue;
@@ -55,20 +58,20 @@ namespace QuickConverter.Tokens
 			if (info == null)
 				return false;
 			text = info.Item3;
-			token = new StaticFunctionToken() { arguments = info.Item2 as ArgumentListToken, method = info.Item1 };
+			token = new StaticFunctionToken() { Arguments = info.Item2 as ArgumentListToken, Method = info.Item1 };
 			return true;
 		}
 
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
-			ParameterInfo[] pars = method.GetParameters();
+			ParameterInfo[] pars = Method.GetParameters();
 			Expression[] args = new Expression[pars.Length];
 			for (int i = 0; i < pars.Length; ++i)
 			{
-				if (i < arguments.Arguments.Count)
+				if (i < Arguments.Arguments.Length)
 				{
 					CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, pars[i].ParameterType, dynamicContext ?? typeof(object));
-					args[i] = Expression.Dynamic(binder, pars[i].ParameterType, arguments.Arguments[i].GetExpression(parameters, locals, dataContainers, dynamicContext, label));
+					args[i] = Expression.Dynamic(binder, pars[i].ParameterType, Arguments.Arguments[i].GetExpression(parameters, locals, dataContainers, dynamicContext, label));
 				}
 				else
 				{
@@ -76,7 +79,7 @@ namespace QuickConverter.Tokens
 					args[i] = Expression.Dynamic(binder, pars[i].ParameterType, Expression.Constant(pars[i].DefaultValue, typeof(object)));
 				}
 			}
-			return Expression.Convert(Expression.Call(method, args), typeof(object));
+			return Expression.Convert(Expression.Call(Method, args), typeof(object));
 		}
 	}
 }

@@ -14,11 +14,14 @@ namespace QuickConverter.Tokens
 		{
 		}
 
-		public override Type ReturnType { get { return onTrue.ReturnType == onFalse.ReturnType ? onTrue.ReturnType : typeof(object); } } 
+		public override Type ReturnType { get { return OnTrue.ReturnType == OnFalse.ReturnType ? OnTrue.ReturnType : typeof(object); } }
 
-		private TokenBase condition;
-		private TokenBase onTrue;
-		private TokenBase onFalse;
+		public override TokenBase[] Children { get { return new[] { Condition, OnTrue, OnFalse }; } }
+
+		public TokenBase Condition { get; private set; }
+		public TokenBase OnTrue { get; private set; }
+		public TokenBase OnFalse { get; private set; }
+
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
 			token = null;
@@ -70,7 +73,7 @@ namespace QuickConverter.Tokens
 				return false;
 			if (!EquationTokenizer.TryEvaluateExpression(text.Substring(cPos + 1).Trim(), out right))
 				return false;
-			token = new TernaryOperatorToken() { condition = left, onTrue = middle, onFalse = right };
+			token = new TernaryOperatorToken() { Condition = left, OnTrue = middle, OnFalse = right };
 			text = "";
 			return true;
 		}
@@ -78,9 +81,9 @@ namespace QuickConverter.Tokens
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
 			CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, typeof(bool), typeof(object));
-			Expression c = condition.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
-			Expression t = onTrue.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
-			Expression f = onFalse.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
+			Expression c = Condition.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
+			Expression t = OnTrue.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
+			Expression f = OnFalse.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
 			return Expression.Condition(Expression.Dynamic(binder, typeof(bool), c), Expression.Convert(t, typeof(object)), Expression.Convert(f, typeof(object)));
 		}
 	}

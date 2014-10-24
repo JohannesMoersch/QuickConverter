@@ -16,13 +16,30 @@ namespace QuickConverter.Tokens
 		{
 		}
 
-		public override Type ReturnType { get { return conType != null ? conType : arrayType.MakeArrayType(); } } 
+		public override Type ReturnType { get { return ConstructorType != null ? ConstructorType : ArrayType.MakeArrayType(); } }
 
-		private Type arrayType;
-		private Type conType;
-		private ConstructorInfo constructor;
-		private ArgumentListToken arguments;
-		private ArgumentListToken initializers; // Allow non-assignments for arrays and ICollection<>
+		public override TokenBase[] Children 
+		{ 
+			get 
+			{
+				if (Arguments != null)
+				{
+					if (Initializers != null)
+						return new[] { Arguments, Initializers };
+					else
+						return new[] { Arguments };
+				}
+				else if (Initializers != null)
+					return new[] { Initializers };
+				return new TokenBase[0];
+			} 
+		}
+
+		public Type ArrayType { get; private set; }
+		public Type ConstructorType { get; private set; }
+		public ConstructorInfo Constructor { get; private set; }
+		public ArgumentListToken Arguments { get; private set; }
+		public ArgumentListToken Initializers { get; private set; } // Allow non-assignments for arrays and ICollection<>
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
 			token = null;
@@ -59,12 +76,12 @@ namespace QuickConverter.Tokens
 			{
 				if (!new ArgumentListToken('(', ')').TryGetToken(ref temp, out args))
 					return false;
-				if ((args as ArgumentListToken).Arguments.Count > 0 || type.IsClass)
+				if ((args as ArgumentListToken).Arguments.Length > 0 || type.IsClass)
 				{
-					cons = type.GetConstructors().Where(info => info.GetParameters().Length == (args as ArgumentListToken).Arguments.Count).ToList();
+					cons = type.GetConstructors().Where(info => info.GetParameters().Length == (args as ArgumentListToken).Arguments.Length).ToList();
 					for (int i = cons.Count - 1; i >= 0; --i)
 					{
-						for (int j = 0; j < (args as ArgumentListToken).Arguments.Count; ++j)
+						for (int j = 0; j < (args as ArgumentListToken).Arguments.Length; ++j)
 						{
 							TypeCastToken cast = (args as ArgumentListToken).Arguments[j] as TypeCastToken;
 							if (cast != null && !cons[i].GetParameters()[j].ParameterType.IsAssignableFrom(cast.TargetType))
@@ -76,7 +93,7 @@ namespace QuickConverter.Tokens
 					}
 
 					if (cons.Count > 1)
-						throw new Exception("Ambiguous constructor call with " + (args as ArgumentListToken).Arguments.Count + " parameter(s) found for type " + type.FullName + ". Try using type casts to disambiguate the call.");
+						throw new Exception("Ambiguous constructor call with " + (args as ArgumentListToken).Arguments.Length + " parameter(s) found for type " + type.FullName + ". Try using type casts to disambiguate the call.");
 					if (cons.Count == 0)
 						return false;
 				}
@@ -88,7 +105,7 @@ namespace QuickConverter.Tokens
 			MethodInfo method = null;
 			if (str.Length > 0 && str[0] == '{')
 			{
-				if (array && (args as ArgumentListToken).Arguments.Count != 0)
+				if (array && (args as ArgumentListToken).Arguments.Length != 0)
 					throw new Exception("Array size arguments and array initializers cannot be used in conjunction.");
 				genericType = type.GetInterfaces().FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ICollection<>));
 				if (array || genericType != null)
@@ -106,14 +123,14 @@ namespace QuickConverter.Tokens
 
 			if (array)
 			{
-				if ((args as ArgumentListToken).Arguments.Count == 0 && inits == null)
+				if ((args as ArgumentListToken).Arguments.Length == 0 && inits == null)
 					return false;
-				token = new ConstructorToken() { arguments = args as ArgumentListToken, arrayType = type, initializers = inits as ArgumentListToken };
+				token = new ConstructorToken() { Arguments = args as ArgumentListToken, ArrayType = type, Initializers = inits as ArgumentListToken };
 			}
 			else if (genericType != null)
-				token = new ConstructorToken() { arguments = args as ArgumentListToken, arrayType = genericType.GetGenericArguments()[0], constructor = cons != null ? cons[0] : null, conType = type, initializers = inits as ArgumentListToken };
+				token = new ConstructorToken() { Arguments = args as ArgumentListToken, ArrayType = genericType.GetGenericArguments()[0], Constructor = cons != null ? cons[0] : null, ConstructorType = type, Initializers = inits as ArgumentListToken };
 			else
-				token = new ConstructorToken() { arguments = args as ArgumentListToken, constructor = cons != null ? cons[0] : null, conType = type, initializers = inits as ArgumentListToken };
+				token = new ConstructorToken() { Arguments = args as ArgumentListToken, Constructor = cons != null ? cons[0] : null, ConstructorType = type, Initializers = inits as ArgumentListToken };
 			text = temp;
 			return true;
 		}
@@ -124,7 +141,7 @@ namespace QuickConverter.Tokens
 			{
 				if (token is ArgumentListToken)
 				{
-					MethodInfo add = constructor.DeclaringType.GetMethods(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(m => m.Name == "Add" && m.GetParameters().Length == (token as ArgumentListToken).Arguments.Count);
+					MethodInfo add = Constructor.DeclaringType.GetMethods(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(m => m.Name == "Add" && m.GetParameters().Length == (token as ArgumentListToken).Arguments.Length);
 					int i = 0;
 					Expression[] exps = new Expression[add.GetParameters().Length];
 					foreach (ParameterInfo info in add.GetParameters())
@@ -136,7 +153,7 @@ namespace QuickConverter.Tokens
 				}
 				else
 				{
-					MethodInfo add = constructor.DeclaringType.GetMethods(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(m => m.Name == "Add" && m.GetParameters().Length == 1);
+					MethodInfo add = Constructor.DeclaringType.GetMethods(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(m => m.Name == "Add" && m.GetParameters().Length == 1);
 					CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, add.GetParameters()[0].ParameterType, dynamicContext);
 					yield return Expression.ElementInit(add, Expression.Dynamic(binder, add.GetParameters()[0].ParameterType, token.GetExpression(parameters, locals, dataContainers, dynamicContext, label)));
 				}
@@ -146,41 +163,41 @@ namespace QuickConverter.Tokens
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
 			Expression exp;
-			if (conType != null)
+			if (ConstructorType != null)
 			{
-				if (constructor != null)
+				if (Constructor != null)
 				{
-					ParameterInfo[] info = constructor.GetParameters();
+					ParameterInfo[] info = Constructor.GetParameters();
 					List<Expression> args = new List<Expression>();
 					for (int i = 0; i < info.Length; ++i)
-						args.Add(Expression.Dynamic(Binder.Convert(CSharpBinderFlags.None, info[i].ParameterType, dynamicContext ?? typeof(object)), info[i].ParameterType, arguments.Arguments[i].GetExpression(parameters, locals, dataContainers, dynamicContext, label)));
-					exp = Expression.New(constructor, args);
+						args.Add(Expression.Dynamic(Binder.Convert(CSharpBinderFlags.None, info[i].ParameterType, dynamicContext ?? typeof(object)), info[i].ParameterType, Arguments.Arguments[i].GetExpression(parameters, locals, dataContainers, dynamicContext, label)));
+					exp = Expression.New(Constructor, args);
 				}
 				else
-					exp = Expression.New(conType);
-				if (initializers != null)
+					exp = Expression.New(ConstructorType);
+				if (Initializers != null)
 				{
-					if (initializers.Arguments.Any(token => token is AssignmentToken))
+					if (Initializers.Arguments.Any(token => token is AssignmentToken))
 					{
 						Func<MemberInfo, Type> getType = mem => mem is FieldInfo ? (mem as FieldInfo).FieldType : (mem as PropertyInfo).PropertyType;
-						var inits = initializers.Arguments.Cast<AssignmentToken>().Select(token => new Tuple<MemberInfo, Expression>(token.Member, Expression.Dynamic(Binder.Convert(CSharpBinderFlags.None, getType(token.Member), dynamicContext ?? typeof(object)), getType(token.Member), token.Value.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));
+						var inits = Initializers.Arguments.Cast<AssignmentToken>().Select(token => new Tuple<MemberInfo, Expression>(token.Member, Expression.Dynamic(Binder.Convert(CSharpBinderFlags.None, getType(token.Member), dynamicContext ?? typeof(object)), getType(token.Member), token.Value.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));
 						exp = Expression.MemberInit(exp as NewExpression, inits.Select(init => (MemberBinding)Expression.Bind(init.Item1, init.Item2)));
 					}
 					else
-						exp = Expression.ListInit(exp as NewExpression, ConvertInitializers(initializers, parameters, locals, dataContainers, dynamicContext, null, label).Cast<ElementInit>());
+						exp = Expression.ListInit(exp as NewExpression, ConvertInitializers(Initializers, parameters, locals, dataContainers, dynamicContext, null, label).Cast<ElementInit>());
 				}
 			}
 			else
 			{
-				if (initializers != null)
+				if (Initializers != null)
 				{
-					CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, arrayType, dynamicContext ?? typeof(object));
-					exp = Expression.NewArrayInit(arrayType, initializers.Arguments.Select(token => Expression.Dynamic(binder, arrayType, token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));
+					CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, ArrayType, dynamicContext ?? typeof(object));
+					exp = Expression.NewArrayInit(ArrayType, Initializers.Arguments.Select(token => Expression.Dynamic(binder, ArrayType, token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));
 				}
 				else
 				{
 					CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.None, typeof(int), dynamicContext ?? typeof(object));
-					exp = Expression.NewArrayBounds(arrayType, arguments.Arguments.Select(token => Expression.Dynamic(binder, typeof(int), token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));
+					exp = Expression.NewArrayBounds(ArrayType, Arguments.Arguments.Select(token => Expression.Dynamic(binder, typeof(int), token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));
 				}
 			}
 			return Expression.Convert(exp, typeof(object));

@@ -14,10 +14,11 @@ namespace QuickConverter.Tokens
 		{
 		}
 
-		public override Type ReturnType { get { return typeof(Type); } } 
+		public override Type ReturnType { get { return typeof(Type); } }
 
-		private Type type;
-		public Type Type { get { return type; } }
+		public override TokenBase[] Children { get { return new TokenBase[0]; } }
+
+		public Type Type { get; private set; }
 		internal override bool TryGetToken(ref string text, out TokenBase token)
 		{
 			token = null;
@@ -30,13 +31,13 @@ namespace QuickConverter.Tokens
 			if (name == null)
 				return false;
 			text = name.Item2.TrimStart().Substring(1);
-			token = new TypeofToken() { type = name.Item1 as Type };
+			token = new TypeofToken() { Type = name.Item1 as Type };
 			return true;
 		}
 
 		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
 		{
-			return Expression.Constant(type, typeof(object));
+			return Expression.Constant(Type, typeof(object));
 		}
 	}
 }
