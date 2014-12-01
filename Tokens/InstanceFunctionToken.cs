@@ -92,7 +92,7 @@ namespace QuickConverter.Tokens
 				{
 					Expression.Assign(targetVar, Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label)),
 					Expression.Assign(argsVar, Expression.NewArrayInit(typeof(object), new[] { targetVar }.Concat(Arguments.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))))),
-					Expression.Assign(methodVar, Expression.Call(GetMethod, Expression.Constant(MethodName, typeof(string)), Expression.Constant(Types, typeof(List<Type>)), argsVar)),
+					Expression.Assign(methodVar, Expression.Call(GetMethod, Expression.Constant(MethodName, typeof(string)), Expression.Constant(Types, typeof(Type[])), argsVar)),
 					branch,
 					resultVar
 				});

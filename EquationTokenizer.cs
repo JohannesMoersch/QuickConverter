@@ -228,7 +228,7 @@ namespace QuickConverter
 			return null;
 		}
 
-		internal static Tuple<MethodInfo, object[]> GetMethod(string methodName, List<Type> typeParams, object[] parameters)
+		internal static Tuple<MethodInfo, object[]> GetMethod(string methodName, Type[] typeParams, object[] parameters)
 		{
 			MethodInfo method = null;
 			if (methods.Count == 0 || parameters[0] == null || !methods.ContainsKey(methodName))
@@ -246,7 +246,7 @@ namespace QuickConverter
 				typeCache.Add(parameters[0].GetType(), methodList);
 			}
 			Type[] paramTypes = parameters.Select(o => o != null ? o.GetType() : null).ToArray();
-			if (typeParams != null && typeParams.Count > 0)
+			if (typeParams != null && typeParams.Length > 0)
 			{
 				for (int i = 0; i < methodList.Count; ++i)
 				{
@@ -254,7 +254,7 @@ namespace QuickConverter
 					if (methodList[i].IsGenericMethod && (param.Length == paramTypes.Length || (param.Length > paramTypes.Length && param[paramTypes.Length].IsOptional)))
 					{
 						var args = methodList[i].GetGenericArguments();
-						if (args.Length == typeParams.Count)
+						if (args.Length == typeParams.Length)
 						{
 							bool good = true;
 							for (int j = 0; j < args.Length; ++j)
@@ -294,9 +294,9 @@ namespace QuickConverter
 				{
 					if (meth.IsGenericMethod)
 					{
-						if (typeParams != null && typeParams.Count > 0)
+						if (typeParams != null && typeParams.Length > 0)
 						{
-							if (typeParams.Count == meth.GetGenericArguments().Length)
+							if (typeParams.Length == meth.GetGenericArguments().Length)
 							{
 								try { method = meth.MakeGenericMethod(typeParams.ToArray()); }
 								catch { method = null; }
@@ -330,13 +330,12 @@ namespace QuickConverter
 			if (pars.Length != parameters.Length)
 				return new Tuple<MethodInfo, object[]>(method, parameters.Concat(pars.Skip(parameters.Length).Select(p => p.DefaultValue)).ToArray());
 			return new Tuple<MethodInfo, object[]>(method, parameters);
-			
 		}
 
-		internal static bool TryGetType(string name, List<Type> typeParams, out Type type)
+		internal static bool TryGetType(string name, Type[] typeParams, out Type type)
 		{
 			if (typeParams != null)
-				name += "`" + typeParams.Count;
+				name += "`" + typeParams.Length;
 			if (types.TryGetValue(name, out type))
 			{
 				if (typeParams != null)

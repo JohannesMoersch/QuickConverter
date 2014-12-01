@@ -61,7 +61,7 @@ namespace QuickConverter.Tokens
 				if (parent == null)
 				{
 					Type type;
-					if (EquationTokenizer.TryGetType(val, typeArgs, out type))
+					if (EquationTokenizer.TryGetType(val, typeArgs != null ? typeArgs.ToArray() : null, out type))
 					{
 						yield return new Tuple<object, string>(type, temp);
 						if (more)
