@@ -32,14 +32,15 @@ namespace QuickConverter
 
 		public object[] Values { get { return _values; } }
 
-		private int[] pIndices;
+		private int[] _pIndices;
 
 		private Func<object[], object[], object> _converter;
 		private Func<object, object[], object>[] _convertBack;
 		private object[] _values;
 		private DataContainer[] _toDataContainers;
 		private DataContainer[] _fromDataContainers;
-		public DynamicMultiConverter(Func<object[], object[], object> converter, Func<object, object[], object>[] convertBack, object[] values, string convertExp, string convertExpDebug, string[] convertBackExp, string[] convertBackExpDebug, Type[] pTypes, int[] pIndices, Type vType, DataContainer[] toDataContainers, DataContainer[] fromDataContainers)
+		private IValueConverter _chainedConverter;
+		public DynamicMultiConverter(Func<object[], object[], object> converter, Func<object, object[], object>[] convertBack, object[] values, string convertExp, string convertExpDebug, string[] convertBackExp, string[] convertBackExpDebug, Type[] pTypes, int[] pIndices, Type vType, DataContainer[] toDataContainers, DataContainer[] fromDataContainers, IValueConverter chainedConverter)
 		{
 			_converter = converter;
 			_convertBack = convertBack;
@@ -49,8 +50,9 @@ namespace QuickConverter
 			ConvertExpression = convertExp;
 			ConvertBackExpression = convertBackExp;
 			PTypes = pTypes;
-			this.pIndices = pIndices;
+			this._pIndices = pIndices;
 			ValueType = vType;
+			_chainedConverter = chainedConverter;
 		}
 
 		public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
@@ -69,7 +71,7 @@ namespace QuickConverter
 				++ExceptionCount;
 				if (Debugger.IsAttached)
 					Console.WriteLine("QuickMultiConverter Exception (\"" + ConvertExpression + "\") - " + e.Message + (e.InnerException != null ? " (Inner - " + e.InnerException.Message + ")" : ""));
-				EquationTokenizer.ThrowQuickConverterEvent(new RuntimeMultiConvertExceptionEventArgs(ConvertExpression, ConvertExpressionDebugView, values, pIndices, null, _values, parameter, this, e));
+				EquationTokenizer.ThrowQuickConverterEvent(new RuntimeMultiConvertExceptionEventArgs(ConvertExpression, ConvertExpressionDebugView, values, _pIndices, null, _values, parameter, this, e));
 				return DependencyProperty.UnsetValue;
 			}
 			finally
@@ -81,12 +83,38 @@ namespace QuickConverter
 				}
 			}
 
+			if (result == DependencyProperty.UnsetValue || result == System.Windows.Data.Binding.DoNothing)
+				return result;
+
+			if (_chainedConverter != null)
+			{
+				try { result = _chainedConverter.Convert(result, targetType, parameter, culture); }
+				catch (Exception e)
+				{
+					EquationTokenizer.ThrowQuickConverterEvent(new ChainedConverterExceptionEventArgs(ConvertExpression, result, targetType, parameter, culture, false, _chainedConverter, this, e));
+					return DependencyProperty.UnsetValue;
+				}
+			}
+
 			result = CastResult(result, targetType);
 			return result;
 		}
 
 		public object[] ConvertBack(object value, Type[] targetTypes, object parameter, System.Globalization.CultureInfo culture)
 		{
+			if (_chainedConverter != null)
+			{
+				try { value = _chainedConverter.ConvertBack(value, typeof(object), parameter, culture); }
+				catch (Exception e)
+				{
+					EquationTokenizer.ThrowQuickConverterEvent(new ChainedConverterExceptionEventArgs(ConvertExpression, value, typeof(object), parameter, culture, true, _chainedConverter, this, e));
+					return new object[targetTypes.Length].Select(o => value).ToArray();
+				}
+
+				if (value == DependencyProperty.UnsetValue || value == System.Windows.Data.Binding.DoNothing)
+					return new object[targetTypes.Length].Select(o => value).ToArray();
+			}
+
 			object[] ret = new object[_convertBack.Length];
 
 			if (ValueType != null && !ValueType.IsInstanceOfType(value))
@@ -105,7 +133,7 @@ namespace QuickConverter
 					++ExceptionCount;
 					if (Debugger.IsAttached)
 						Console.WriteLine("QuickMultiConverter Exception (\"" + ConvertBackExpression[i] + "\") - " + e.Message + (e.InnerException != null ? " (Inner - " + e.InnerException.Message + ")" : ""));
-					EquationTokenizer.ThrowQuickConverterEvent(new RuntimeMultiConvertExceptionEventArgs(ConvertBackExpression[i], ConvertBackExpressionDebugView[i], null, pIndices, value, _values, parameter, this, e));
+					EquationTokenizer.ThrowQuickConverterEvent(new RuntimeMultiConvertExceptionEventArgs(ConvertBackExpression[i], ConvertBackExpressionDebugView[i], null, _pIndices, value, _values, parameter, this, e));
 					ret[i] = DependencyProperty.UnsetValue;
 				}
 				ret[i] = CastResult(ret[i], targetTypes[i]);

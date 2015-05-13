@@ -9,6 +9,8 @@ namespace QuickConverter
 	{
 		TokenizationSuccess,
 		TokenizationFailure,
-		RuntimeConvertException,
+		RuntimeCodeException,
+		MarkupException,
+		ChainedConverterException
 	}
 }

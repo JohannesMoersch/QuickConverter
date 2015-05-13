@@ -26,7 +26,7 @@ namespace QuickConverter.Tokens
 		public TokenBase Value { get; private set; }
 		public bool Lambda { get; private set; }
 
-		internal override bool TryGetToken(ref string text, out TokenBase token)
+		internal override bool TryGetToken(ref string text, out TokenBase token, bool requireReturnValue = true)
 		{
 			token = null;
 			TokenBase arguments;
@@ -49,7 +49,7 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label, bool requiresReturnValue = true)
 		{
 			if (Lambda)
 			{
@@ -104,7 +104,7 @@ namespace QuickConverter.Tokens
 			else
 			{
 				List<ConstantExpression> newLocals = new List<ConstantExpression>();
-				foreach (var arg in Arguments.Arguments.Cast<AssignmentToken>())
+				foreach (var arg in Arguments.Arguments.Cast<LambdaAssignmentToken>())
 				{
 					if (locals.Any(name => name.Key == arg.Name))
 						throw new Exception("Duplicate local variable name \"" + arg.Name + "\" found.");
@@ -114,9 +114,9 @@ namespace QuickConverter.Tokens
 					newLocals.Add(value);
 					locals.Add(arg.Name, value);
 				}
-				IEnumerable<BinaryExpression> assignments = Arguments.Arguments.Cast<AssignmentToken>().Zip(newLocals, (t, l) => Expression.Assign(Expression.Property(l, "Value"), t.Value.GetExpression(parameters, locals, dataContainers, dynamicContext, label)));
+				IEnumerable<BinaryExpression> assignments = Arguments.Arguments.Cast<LambdaAssignmentToken>().Zip(newLocals, (t, l) => Expression.Assign(Expression.Property(l, "Value"), t.Value.GetExpression(parameters, locals, dataContainers, dynamicContext, label)));
 				Expression ret = Expression.Block(assignments.Cast<Expression>().Concat(new Expression[] {Value.GetExpression(parameters, locals, dataContainers, dynamicContext, label)}));
-				foreach (var arg in Arguments.Arguments.Cast<AssignmentToken>())
+				foreach (var arg in Arguments.Arguments.Cast<LambdaAssignmentToken>())
 					locals.Remove(arg.Name);
 				return ret;
 			}

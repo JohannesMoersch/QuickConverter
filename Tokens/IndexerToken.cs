@@ -21,12 +21,13 @@ namespace QuickConverter.Tokens
 		public ArgumentListToken Indices { get; private set; }
 		public TokenBase Target { get; private set; }
 
-		internal override void SetPostTarget(TokenBase target)
+		internal override bool SetPostTarget(TokenBase target)
 		{
 			Target = target;
+			return true;
 		}
 		
-		internal override bool TryGetToken(ref string text, out TokenBase token)
+		internal override bool TryGetToken(ref string text, out TokenBase token, bool requireReturnValue = true)
 		{
 			token = null;
 			string temp = text;
@@ -64,7 +65,7 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label, bool requiresReturnValue = true)
 		{
 			CallSiteBinder binder = Binder.GetIndex(CSharpBinderFlags.None, dynamicContext ?? typeof(object), new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null), CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
 			return Expression.Dynamic(binder, typeof(object), new Expression[] { Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label) }.Concat(Indices.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));

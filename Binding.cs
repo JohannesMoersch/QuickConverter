@@ -73,47 +73,55 @@ namespace QuickConverter
 
 		public override object ProvideValue(IServiceProvider serviceProvider)
 		{
-			if (P == null)
-				return null;
-
-			bool getExpression;
-			if (serviceProvider == null)
-				getExpression = false;
-			else
+			try
 			{
-				var targetProvider = serviceProvider.GetService(typeof(IProvideValueTarget)) as IProvideValueTarget;
-				if (targetProvider != null && (targetProvider.TargetObject is Setter))
+				if (P == null)
+					return null;
+
+				bool getExpression;
+				if (serviceProvider == null)
 					getExpression = false;
-				else if (targetProvider == null || !(targetProvider.TargetProperty is PropertyInfo))
-					getExpression = true;
 				else
 				{
-					Type propType = (targetProvider.TargetProperty as PropertyInfo).PropertyType;
-					if (propType == typeof(Binding))
-						return this;
-					getExpression = !propType.IsAssignableFrom(typeof(System.Windows.Data.MultiBinding));
+					var targetProvider = serviceProvider.GetService(typeof(IProvideValueTarget)) as IProvideValueTarget;
+					if (targetProvider != null && (targetProvider.TargetObject is Setter))
+						getExpression = false;
+					else if (targetProvider == null || !(targetProvider.TargetProperty is PropertyInfo))
+						getExpression = true;
+					else
+					{
+						Type propType = (targetProvider.TargetProperty as PropertyInfo).PropertyType;
+						if (propType == typeof(Binding))
+							return this;
+						getExpression = !propType.IsAssignableFrom(typeof(System.Windows.Data.MultiBinding));
+					}
 				}
+
+				P.Converter = new QuickConverter()
+				{
+					Convert = Convert,
+					ConvertBack = ConvertBack,
+					DynamicContext = DynamicContext,
+					PType = PType,
+					V0 = V0,
+					V1 = V1,
+					V2 = V2,
+					V3 = V3,
+					V4 = V4,
+					V5 = V5,
+					V6 = V6,
+					V7 = V7,
+					V8 = V8,
+					V9 = V9
+				}.Get();
+
+				return getExpression ? P.ProvideValue(serviceProvider) : P;
 			}
-
-			P.Converter = new QuickConverter()
+			catch (Exception e)
 			{
-				Convert = Convert,
-				ConvertBack = ConvertBack,
-				DynamicContext = DynamicContext,
-				PType = PType,
-				V0 = V0,
-				V1 = V1,
-				V2 = V2,
-				V3 = V3,
-				V4 = V4,
-				V5 = V5,
-				V6 = V6,
-				V7 = V7,
-				V8 = V8,
-				V9 = V9
-			}.Get();
-
-			return getExpression ? P.ProvideValue(serviceProvider) : P;
+				EquationTokenizer.ThrowQuickConverterEvent(new MarkupExtensionExceptionEventArgs(Convert, this, e));
+				throw;
+			}
 		}
 	}
 }

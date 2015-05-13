@@ -20,7 +20,7 @@ namespace QuickConverter.Tokens
 
 		public TokenBase Exception { get; private set; }
 
-		internal override bool TryGetToken(ref string text, out TokenBase token)
+		internal override bool TryGetToken(ref string text, out TokenBase token, bool requireReturnValue = true)
 		{
 			token = null;
 			if (!text.StartsWith("throw"))
@@ -36,7 +36,7 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label, bool requiresReturnValue = true)
 		{
 			return Expression.Throw(Exception.GetExpression(parameters, locals, dataContainers, dynamicContext, label), typeof(object));
 		}

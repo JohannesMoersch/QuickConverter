@@ -51,12 +51,12 @@ namespace QuickConverter.Tokens
 			this.Operation = operation;
 		}
 
-		internal override bool TryGetToken(ref string text, out TokenBase token)
+		internal override bool TryGetToken(ref string text, out TokenBase token, bool requireReturnValue = true)
 		{
 			throw new NotImplementedException();
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label, bool requiresReturnValue = true)
 		{
 			if (Operation == Operator.And || Operation == Operator.AlternateAnd)
 				return Expression.Convert(Expression.AndAlso(Expression.Convert(Left.GetExpression(parameters, locals, dataContainers, dynamicContext, label), typeof(bool)), Expression.Convert(Right.GetExpression(parameters, locals, dataContainers, dynamicContext, label), typeof(bool))), typeof(object));

@@ -31,12 +31,13 @@ namespace QuickConverter.Tokens
 		public Type[] Types { get; private set; }
 		public TokenBase Target { get; private set; }
 
-		internal override void SetPostTarget(TokenBase target)
+		internal override bool SetPostTarget(TokenBase target)
 		{
 			Target = target;
+			return true;
 		}
 
-		internal override bool TryGetToken(ref string text, out TokenBase token)
+		internal override bool TryGetToken(ref string text, out TokenBase token, bool requireReturnValue = true)
 		{
 			token = null;
 			string temp = text;
@@ -72,23 +73,28 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label, bool requiresReturnValue = true)
 		{
-			CallSiteBinder binder = Binder.InvokeMember(CSharpBinderFlags.None, MethodName, Types, dynamicContext ?? typeof(object), new object[Arguments.Arguments.Length + 1].Select(val => CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)));
-			Expression dynamicCall = Expression.Dynamic(binder, typeof(object), new[] { Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label) }.Concat(Arguments.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));
+			CallSiteBinder binder = Binder.InvokeMember(requiresReturnValue ? CSharpBinderFlags.None : CSharpBinderFlags.ResultDiscarded, MethodName, Types, dynamicContext ?? typeof(object), new object[Arguments.Arguments.Length + 1].Select(val => CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)));
+			Expression dynamicCall = Expression.Dynamic(binder, requiresReturnValue ? typeof(object) : typeof(void), new[] { Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label) }.Concat(Arguments.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));
 
 			var targetVar = Expression.Variable(typeof(object));
 			var argsVar = Expression.Variable(typeof(object[]));
 			var methodVar = Expression.Variable(typeof(Tuple<MethodInfo, object[]>));
-			var resultVar = Expression.Variable(typeof(object));
 
-			Expression test = Expression.Equal(methodVar, Expression.Constant(null, typeof(Tuple<MethodInfo, object[]>)));
-			Expression ifNotNull = Expression.Assign(resultVar, Expression.Call(Expression.Property(methodVar, Item1Prop), InvokeMethod, Expression.Constant(null), Expression.Property(methodVar, Item2Prop)));
-			Expression ifNull = Expression.Assign(resultVar, dynamicCall);
+			Expression ret;
+			
+			if (requiresReturnValue)
+			{
+				var resultVar = Expression.Variable(typeof(object));
 
-			Expression branch = Expression.IfThenElse(test, ifNull, ifNotNull);
+				Expression test = Expression.Equal(methodVar, Expression.Constant(null, typeof(Tuple<MethodInfo, object[]>)));
+				Expression ifNotNull = Expression.Assign(resultVar, Expression.Call(Expression.Property(methodVar, Item1Prop), InvokeMethod, Expression.Constant(null), Expression.Property(methodVar, Item2Prop)));
+				Expression ifNull = Expression.Assign(resultVar, dynamicCall);
 
-			Expression block = Expression.Block(new[] { targetVar, argsVar, methodVar }, new[] 
+				Expression branch = Expression.IfThenElse(test, ifNull, ifNotNull);
+
+				Expression block = Expression.Block(new[] { targetVar, argsVar, methodVar }, new[] 
 				{
 					Expression.Assign(targetVar, Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label)),
 					Expression.Assign(argsVar, Expression.NewArrayInit(typeof(object), new[] { targetVar }.Concat(Arguments.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))))),
@@ -97,7 +103,26 @@ namespace QuickConverter.Tokens
 					resultVar
 				});
 
-			Expression ret = Expression.Block(new[] { resultVar }, new Expression[] { Expression.IfThenElse(Expression.Property(null, SupportsExtensions), block, ifNull), resultVar });
+				ret = Expression.Block(new[] { resultVar }, new Expression[] { Expression.IfThenElse(Expression.Property(null, SupportsExtensions), block, ifNull), resultVar });
+			}
+			else
+			{
+				Expression test = Expression.Equal(methodVar, Expression.Constant(null, typeof(Tuple<MethodInfo, object[]>)));
+				Expression ifNotNull = Expression.Call(Expression.Property(methodVar, Item1Prop), InvokeMethod, Expression.Constant(null), Expression.Property(methodVar, Item2Prop));
+				Expression ifNull = dynamicCall;
+
+				Expression branch = Expression.IfThenElse(test, ifNull, ifNotNull);
+
+				Expression block = Expression.Block(typeof(void), new[] { targetVar, argsVar, methodVar }, new[] 
+				{
+					Expression.Assign(targetVar, Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label)),
+					Expression.Assign(argsVar, Expression.NewArrayInit(typeof(object), new[] { targetVar }.Concat(Arguments.Arguments.Select(token => token.GetExpression(parameters, locals, dataContainers, dynamicContext, label))))),
+					Expression.Assign(methodVar, Expression.Call(GetMethod, Expression.Constant(MethodName, typeof(string)), Expression.Constant(Types, typeof(Type[])), argsVar)),
+					branch
+				});
+
+				ret = Expression.IfThenElse(Expression.Property(null, SupportsExtensions), block, ifNull);
+			}
 
 			return ret;
 		}

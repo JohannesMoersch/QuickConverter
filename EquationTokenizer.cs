@@ -47,7 +47,8 @@ namespace QuickConverter
 					new InstanceMemberToken(),
 					new IndexerToken(),
 					new IsToken(),
-					new AsToken()
+					new AsToken(),
+					new AssignmentToken()
 				};
 			types.Add("bool", typeof(bool));
 			types.Add("byte", typeof(byte));
@@ -365,14 +366,14 @@ namespace QuickConverter
 			return type != null;
 		}
 
-		internal static bool TryGetValueToken(ref string text, out TokenBase token)
+		internal static bool TryGetValueToken(ref string text, out TokenBase token, bool requireReturnValue = true)
 		{
 			string temp = null;
 			token = null;
 			foreach (TokenBase type in valueTypeInstanceList)
 			{
 				temp = text;
-				if (type.TryGetToken(ref temp, out token))
+				if (type.TryGetToken(ref temp, out token, requireReturnValue))
 					break;
 				token = null;
 			}
@@ -380,32 +381,38 @@ namespace QuickConverter
 				return false;
 			text = temp;
 
-			while (true)
+			if (token.ReturnType != typeof(void))
 			{
-				bool cont = false;
-				TokenBase newToken;
-				foreach (TokenBase type in postValueTypeInstanceList)
+				while (true)
 				{
-					if (type.TryGetToken(ref temp, out newToken))
+					temp = temp.TrimStart();
+					bool cont = false;
+					TokenBase newToken;
+					foreach (TokenBase type in postValueTypeInstanceList)
 					{
-						newToken.SetPostTarget(token);
-						token = newToken;
-						text = temp;
-						cont = true;
-						break;
+						if (type.TryGetToken(ref temp, out newToken, requireReturnValue))
+						{
+							if (newToken.SetPostTarget(token))
+							{
+								token = newToken;
+								text = temp;
+								cont = true;
+								break;
+							}
+						}
 					}
+					if (!cont)
+						break;
 				}
-				if (!cont)
-					break;
-			}
 
-			if (token is IPostToken)
-				token = new PostTokenChainToken(token);
+				if (token is IPostToken)
+					token = new PostTokenChainToken(token);
+			}
 
 			return true;
 		}
 
-		internal static bool TryEvaluateExpression(string text, out TokenBase token)
+		internal static bool TryEvaluateExpression(string text, out TokenBase token, bool requireReturnValue = true)
 		{
 			string temp = text;
 			if (new NullCoalesceOperatorToken().TryGetToken(ref temp, out token))
@@ -419,8 +426,10 @@ namespace QuickConverter
 			List<Operator> operators = new List<Operator>();
 			while (operators.Count == tokens.Count)
 			{
+				if (tokens.Count != 0 && !requireReturnValue)
+					return false;
 				TokenBase newToken;
-				if (!TryGetValueToken(ref text, out newToken))
+				if (!TryGetValueToken(ref text, out newToken, requireReturnValue))
 					return false;
 				tokens.Add(newToken);
 				text = text.TrimStart();
@@ -464,10 +473,10 @@ namespace QuickConverter
 		/// </summary>
 		/// <param name="expression">The string to tokenize.</param>
 		/// <returns>The resulting root token.</returns>
-		public static TokenBase Tokenize(string expression)
+		public static TokenBase Tokenize(string expression, bool requireReturnValue = true)
 		{
 			TokenBase token;
-			if (!TryEvaluateExpression(expression, out token))
+			if (!TryEvaluateExpression(expression, out token, requireReturnValue))
 			{
 				if (Debugger.IsAttached)
 					Console.WriteLine("EquationTokenizer Exception (\"" + expression + "\") - Failed to tokenize.");
@@ -480,8 +489,9 @@ namespace QuickConverter
 
 		internal static void ThrowQuickConverterEvent(QuickConverterEventArgs args)
 		{
-			if (QuickConverterEvent != null)
-				QuickConverterEvent(args);
+			var handler = QuickConverterEvent;
+			if (handler != null)
+				handler(args);
 		}
 
 		public static event QuickConverterEventHandler QuickConverterEvent;

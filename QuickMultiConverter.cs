@@ -34,6 +34,12 @@ namespace QuickConverter
 		/// <summary>Creates a constant parameter. This can be accessed inside the converter as $V9.</summary>
 		public object V9 { get; set; }
 
+		/// <summary>
+		/// During Convert calls, this converter executes after the QuickConverter.
+		/// During ConvertBack calls, this converter executes before the QuickConverter.
+		/// </summary>
+		public IValueConverter ChainedConverter { get; set; }
+
 		/// <summary>The converter will return DependencyObject.Unset during conversion if P is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
 		public object P0Type { get; set; }
 		/// <summary>The converter will return DependencyObject.Unset during conversion if P is not of this type. Both QuickConverter syntax (as a string) and Type objects are valid.</summary>
@@ -158,90 +164,98 @@ namespace QuickConverter
 
 		public override object ProvideValue(IServiceProvider serviceProvider)
 		{
-			Tuple<string, Func<object[], object[], object>, string[], DataContainer[]> func = null;
-			if (Converter != null && !toFunctions.TryGetValue(Converter, out func))
+			try
 			{
-				Tuple<string, Delegate, ParameterExpression[], DataContainer[]> tuple = GetLambda(Converter, false);
-				if (tuple == null)
-					return null;
-
-				List<string> parNames = new List<string>();
-				int pCount = 0;
-				ParameterExpression inputP = Expression.Parameter(typeof(object[]));
-				ParameterExpression inputV = Expression.Parameter(typeof(object[]));
-				int[] inds = new int[10];
-				foreach (var par in tuple.Item3.Where(p => p.Name[0] == 'P').OrderBy(e => e.Name))
+				Tuple<string, Func<object[], object[], object>, string[], DataContainer[]> func = null;
+				if (Converter != null && !toFunctions.TryGetValue(Converter, out func))
 				{
-					parNames.Add(par.Name);
-					inds[par.Name[1] - '0'] = pCount++;
+					Tuple<string, Delegate, ParameterExpression[], DataContainer[]> tuple = GetLambda(Converter, false);
+					if (tuple == null)
+						return null;
+
+					List<string> parNames = new List<string>();
+					int pCount = 0;
+					ParameterExpression inputP = Expression.Parameter(typeof(object[]));
+					ParameterExpression inputV = Expression.Parameter(typeof(object[]));
+					int[] inds = new int[10];
+					foreach (var par in tuple.Item3.Where(p => p.Name[0] == 'P').OrderBy(e => e.Name))
+					{
+						parNames.Add(par.Name);
+						inds[par.Name[1] - '0'] = pCount++;
+					}
+					var arguments = tuple.Item3.Select<ParameterExpression, Expression>(par =>
+					{
+						if (par.Name[0] == 'P')
+							return Expression.ArrayIndex(inputP, Expression.Constant(inds[par.Name[1] - '0']));
+						return Expression.ArrayIndex(inputV, Expression.Constant((int)(par.Name[1] - '0')));
+					});
+
+					Expression exp = Expression.Call(Expression.Constant(tuple.Item2, tuple.Item2.GetType()), tuple.Item2.GetType().GetMethod("Invoke"), arguments);
+					var result = Expression.Lambda<Func<object[], object[], object>>(exp, inputP, inputV).Compile();
+					func = new Tuple<string, Func<object[], object[], object>, string[], DataContainer[]>(tuple.Item1, result, parNames.ToArray(), tuple.Item4);
+
+					toFunctions.Add(Converter, func);
 				}
-				var arguments = tuple.Item3.Select<ParameterExpression, Expression>(par =>
+				Tuple<string, Func<object, object[], object>, DataContainer[]>[] backFuncs = new Tuple<string, Func<object, object[], object>, DataContainer[]>[10];
+				for (int i = 0; i <= 9; ++i)
 				{
-					if (par.Name[0] == 'P')
-						return Expression.ArrayIndex(inputP, Expression.Constant(inds[par.Name[1] - '0']));
-					return Expression.ArrayIndex(inputV, Expression.Constant((int)(par.Name[1] - '0')));
-				});
+					var converter = typeof(QuickMultiConverter).GetProperty("ConvertBack" + i).GetValue(this, null) as string;
+					if (String.IsNullOrWhiteSpace(converter))
+					{
+						backFuncs[i] = new Tuple<string, Func<object, object[], object>, DataContainer[]>(null, null, new DataContainer[0]);
+						continue;
+					}
+					Tuple<string, Delegate, ParameterExpression[], DataContainer[]> tuple = GetLambda(converter, true);
+					if (tuple == null)
+					{
+						backFuncs[i] = new Tuple<string, Func<object, object[], object>, DataContainer[]>(null, null, new DataContainer[0]);
+						continue;
+					}
 
-				Expression exp = Expression.Call(Expression.Constant(tuple.Item2, tuple.Item2.GetType()), tuple.Item2.GetType().GetMethod("Invoke"), arguments);
-				var result = Expression.Lambda<Func<object[], object[], object>>(exp, inputP, inputV).Compile();
-				func = new Tuple<string, Func<object[], object[], object>, string[], DataContainer[]>(tuple.Item1, result, parNames.ToArray(), tuple.Item4);
+					ParameterExpression val = Expression.Parameter(typeof(object));
+					ParameterExpression inV = Expression.Parameter(typeof(object[]));
+					var arguments = tuple.Item3.Select<ParameterExpression, Expression>(par =>
+					{
+						if (par.Name[0] == 'V')
+							return Expression.ArrayIndex(inV, Expression.Constant((int)(par.Name[1] - '0')));
+						return val;
+					});
 
-				toFunctions.Add(Converter, func);
+					Expression exp = Expression.Call(Expression.Constant(tuple.Item2, tuple.Item2.GetType()), tuple.Item2.GetType().GetMethod("Invoke"), arguments);
+					var result = Expression.Lambda<Func<object, object[], object>>(exp, val, inV).Compile();
+					backFuncs[i] = new Tuple<string, Func<object, object[], object>, DataContainer[]>(tuple.Item1, result, tuple.Item4);
+				}
+
+				if (func == null)
+					func = new Tuple<string, Func<object[], object[], object>, string[], DataContainer[]>(null, null, null, null);
+
+				List<object> pTypes = new List<object>();
+				List<int> pIndicies = new List<int>();
+				List<Tuple<string, Func<object, object[], object>, DataContainer[], string>> backs = new List<Tuple<string, Func<object, object[], object>, DataContainer[], string>>();
+				if (func.Item3 != null)
+				{
+					foreach (string name in func.Item3)
+					{
+						int index = name[1] - '0';
+						pIndicies.Add(index);
+						pTypes.Add(typeof(QuickMultiConverter).GetProperty(name + "Type").GetValue(this, null));
+						backs.Add(new Tuple<string, Func<object, object[], object>, DataContainer[], string>(backFuncs[index].Item1, backFuncs[index].Item2, backFuncs[index].Item3, typeof(QuickMultiConverter).GetProperty("ConvertBack" + name[1]).GetValue(this, null) as string));
+					}
+				}
+
+				List<object> vals = new List<object>();
+				for (int i = 0; i <= 9; ++i)
+					vals.Add(typeof(QuickMultiConverter).GetProperty("V" + i).GetValue(this, null));
+
+				_parameterOrder = func.Item3;
+
+				return new DynamicMultiConverter(func.Item2, backs.Select(t => t.Item2).ToArray(), vals.ToArray(), Converter, func.Item1, backs.Select(t => t.Item4).ToArray(), backs.Select(t => t.Item1).ToArray(), pTypes.Select(t => QuickConverter.GetType(t)).ToArray(), pIndicies.ToArray(), QuickConverter.GetType(ValueType), func.Item4, backs.SelectMany(t => t.Item3).ToArray(), ChainedConverter);
 			}
-			Tuple<string, Func<object, object[], object>, DataContainer[]>[] backFuncs = new Tuple<string, Func<object,object[],object>,DataContainer[]>[10];
-			for (int i = 0; i <= 9; ++i)
+			catch (Exception e)
 			{
-				var converter = typeof(QuickMultiConverter).GetProperty("ConvertBack" + i).GetValue(this, null) as string;
-				if (String.IsNullOrWhiteSpace(converter))
-				{
-					backFuncs[i] = new Tuple<string, Func<object, object[], object>, DataContainer[]>(null, null, new DataContainer[0]);
-					continue;
-				}
-				Tuple<string, Delegate, ParameterExpression[], DataContainer[]> tuple = GetLambda(converter, true);
-				if (tuple == null)
-				{
-					backFuncs[i] = new Tuple<string, Func<object, object[], object>, DataContainer[]>(null, null, new DataContainer[0]);
-					continue;
-				}
-
-				ParameterExpression val = Expression.Parameter(typeof(object));
-				ParameterExpression inV = Expression.Parameter(typeof(object[]));
-				var arguments = tuple.Item3.Select<ParameterExpression, Expression>(par =>
-				{
-					if (par.Name[0] == 'V')
-						return Expression.ArrayIndex(inV, Expression.Constant((int)(par.Name[1] - '0')));
-					return val;
-				});
-
-				Expression exp = Expression.Call(Expression.Constant(tuple.Item2, tuple.Item2.GetType()), tuple.Item2.GetType().GetMethod("Invoke"), arguments);
-				var result = Expression.Lambda<Func<object, object[], object>>(exp, val, inV).Compile();
-				backFuncs[i] = new Tuple<string, Func<object, object[], object>, DataContainer[]>(tuple.Item1, result, tuple.Item4);
+				EquationTokenizer.ThrowQuickConverterEvent(new MarkupExtensionExceptionEventArgs(Converter, this, e));
+				throw;
 			}
-
-			if (func == null)
-				func = new Tuple<string, Func<object[], object[], object>, string[], DataContainer[]>(null, null, null, null);
-
-			List<object> pTypes = new List<object>();
-			List<int> pIndicies = new List<int>();
-			List<Tuple<string, Func<object, object[], object>, DataContainer[], string>> backs = new List<Tuple<string, Func<object, object[], object>, DataContainer[], string>>();
-			if (func.Item3 != null)
-			{
-				foreach (string name in func.Item3)
-				{
-					int index = name[1] - '0';
-					pIndicies.Add(index);
-					pTypes.Add(typeof(QuickMultiConverter).GetProperty(name + "Type").GetValue(this, null));
-					backs.Add(new Tuple<string, Func<object, object[], object>, DataContainer[], string>(backFuncs[index].Item1, backFuncs[index].Item2, backFuncs[index].Item3, typeof(QuickMultiConverter).GetProperty("ConvertBack" + name[1]).GetValue(this, null) as string));
-				}
-			}
-
-			List<object> vals = new List<object>();
-			for (int i = 0; i <= 9; ++i)
-				vals.Add(typeof(QuickMultiConverter).GetProperty("V" + i).GetValue(this, null));
-
-			_parameterOrder = func.Item3;
-
-			return new DynamicMultiConverter(func.Item2, backs.Select(t => t.Item2).ToArray(), vals.ToArray(), Converter, func.Item1, backs.Select(t => t.Item4).ToArray(), backs.Select(t => t.Item1).ToArray(), pTypes.Select(t => QuickConverter.GetType(t)).ToArray(), pIndicies.ToArray(), QuickConverter.GetType(ValueType), func.Item4, backs.SelectMany(t => t.Item3).ToArray());
 		}
 	}
 }

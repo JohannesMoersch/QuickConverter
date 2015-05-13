@@ -7,7 +7,7 @@ namespace QuickConverter
 {
 	public class RuntimeMultiConvertExceptionEventArgs : QuickConverterEventArgs
 	{
-		public override QuickConverterEventType Type { get { return QuickConverterEventType.RuntimeConvertException; } }
+		public override QuickConverterEventType Type { get { return QuickConverterEventType.RuntimeCodeException; } }
 
 		public object P0 { get; private set; }
 		public object P1 { get; private set; }

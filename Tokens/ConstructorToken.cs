@@ -40,7 +40,7 @@ namespace QuickConverter.Tokens
 		public ConstructorInfo Constructor { get; private set; }
 		public ArgumentListToken Arguments { get; private set; }
 		public ArgumentListToken Initializers { get; private set; } // Allow non-assignments for arrays and ICollection<>
-		internal override bool TryGetToken(ref string text, out TokenBase token)
+		internal override bool TryGetToken(ref string text, out TokenBase token, bool requireReturnValue = true)
 		{
 			token = null;
 			if (!text.StartsWith("new"))
@@ -160,7 +160,7 @@ namespace QuickConverter.Tokens
 			}
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label, bool requiresReturnValue = true)
 		{
 			Expression exp;
 			if (ConstructorType != null)
@@ -177,10 +177,10 @@ namespace QuickConverter.Tokens
 					exp = Expression.New(ConstructorType);
 				if (Initializers != null)
 				{
-					if (Initializers.Arguments.Any(token => token is AssignmentToken))
+					if (Initializers.Arguments.Any(token => token is LambdaAssignmentToken))
 					{
 						Func<MemberInfo, Type> getType = mem => mem is FieldInfo ? (mem as FieldInfo).FieldType : (mem as PropertyInfo).PropertyType;
-						var inits = Initializers.Arguments.Cast<AssignmentToken>().Select(token => new Tuple<MemberInfo, Expression>(token.Member, Expression.Dynamic(Binder.Convert(CSharpBinderFlags.None, getType(token.Member), dynamicContext ?? typeof(object)), getType(token.Member), token.Value.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));
+						var inits = Initializers.Arguments.Cast<LambdaAssignmentToken>().Select(token => new Tuple<MemberInfo, Expression>(token.Member, Expression.Dynamic(Binder.Convert(CSharpBinderFlags.None, getType(token.Member), dynamicContext ?? typeof(object)), getType(token.Member), token.Value.GetExpression(parameters, locals, dataContainers, dynamicContext, label))));
 						exp = Expression.MemberInit(exp as NewExpression, inits.Select(init => (MemberBinding)Expression.Bind(init.Item1, init.Item2)));
 					}
 					else

@@ -78,7 +78,7 @@ namespace QuickConverter.Tokens
 				}
 				else
 				{
-					foreach (MemberInfo info in parent.GetMember(val, BindingFlags.Public | BindingFlags.Static))
+					foreach (MemberInfo info in parent.GetMember(val, BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy))
 					{
 						if (info.MemberType == MemberTypes.Method)
 						{
@@ -173,23 +173,24 @@ namespace QuickConverter.Tokens
 			return new[] { this }.Concat(Children.SelectMany(t => t.GetChildren()));
 		}
 
-		internal virtual void SetPostTarget(TokenBase target)
+		internal virtual bool SetPostTarget(TokenBase target)
 		{
+			return false;
 		}
 		
-		internal abstract bool TryGetToken(ref string text, out TokenBase token);
+		internal abstract bool TryGetToken(ref string text, out TokenBase token, bool requireReturnValue = true);
 
 		public abstract Type ReturnType { get; }
 
 		public abstract TokenBase[] Children { get; }
 
-		public Expression GetExpression(out List<ParameterExpression> parameters, out List<DataContainer> dataContainers, Type dynamicContext = null)
+		public Expression GetExpression(out List<ParameterExpression> parameters, out List<DataContainer> dataContainers, Type dynamicContext = null, bool requiresReturnValue = true)
 		{
 			parameters = new List<ParameterExpression>();
 			dataContainers = new List<DataContainer>();
-			return GetExpression(parameters, new Dictionary<string, ConstantExpression>(), dataContainers, dynamicContext, null);
+			return GetExpression(parameters, new Dictionary<string, ConstantExpression>(), dataContainers, dynamicContext, null, requiresReturnValue);
 		}
 
-		internal abstract Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label);
+		internal abstract Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label, bool requiresReturnValue = true);
 	}
 }

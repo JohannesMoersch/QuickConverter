@@ -5,11 +5,13 @@ using System.Text;
 
 namespace QuickConverter
 {
-	public class RuntimeSingleConvertExceptionEventArgs : QuickConverterEventArgs
+	public class RuntimeEventHandlerExceptionEventArgs : QuickConverterEventArgs
 	{
 		public override QuickConverterEventType Type { get { return QuickConverterEventType.RuntimeCodeException; } }
 
-		public object P { get; private set; }
+		public object Sender { get; private set; }
+
+		public object EventArgs { get; private set; }
 
 		public object V0 { get; private set; }
 		public object V1 { get; private set; }
@@ -22,21 +24,18 @@ namespace QuickConverter
 		public object V8 { get; private set; }
 		public object V9 { get; private set; }
 
-		public object Value { get; private set; }
-
-		public object Parameter { get; private set; }
-
-		public DynamicSingleConverter Converter { get; private set; }
+		public QuickEventHandler Handler { get; private set; }
 
 		public Exception Exception { get; private set; }
 
 		public string DebugView { get; private set; }
 
-		internal RuntimeSingleConvertExceptionEventArgs(string expression, string debugView, object p, object value, object[] values, object parameter, DynamicSingleConverter converter, Exception exception)
+		internal RuntimeEventHandlerExceptionEventArgs(object sender, object eventArgs, string expression, string debugView, object[] values, QuickEventHandler handler, Exception exception)
 			: base(expression)
 		{
+			Sender = sender;
+			EventArgs = eventArgs;
 			DebugView = debugView;
-			P = p;
 			V0 = values[0];
 			V1 = values[1];
 			V2 = values[2];
@@ -47,9 +46,7 @@ namespace QuickConverter
 			V7 = values[7];
 			V8 = values[8];
 			V9 = values[9];
-			Value = value;
-			Parameter = parameter;
-			Converter = converter;
+			Handler = handler;
 			Exception = exception;
 		}
 	}

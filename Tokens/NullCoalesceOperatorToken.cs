@@ -21,7 +21,7 @@ namespace QuickConverter.Tokens
 		public TokenBase Condition { get; private set; }
 		public TokenBase OnNull { get; private set; }
 
-		internal override bool TryGetToken(ref string text, out TokenBase token)
+		internal override bool TryGetToken(ref string text, out TokenBase token, bool requireReturnValue = true)
 		{
 			token = null;
 			bool inQuotes = false;
@@ -58,7 +58,7 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label, bool requiresReturnValue = true)
 		{
 			Expression c = Condition.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
 			Expression n = OnNull.GetExpression(parameters, locals, dataContainers, dynamicContext, label);

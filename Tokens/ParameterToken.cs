@@ -18,7 +18,7 @@ namespace QuickConverter.Tokens
 
 		public string Name { get; private set; }
 
-		internal override bool TryGetToken(ref string text, out TokenBase token)
+		internal override bool TryGetToken(ref string text, out TokenBase token, bool requireReturnValue = true)
 		{
 			token = null;
 			if (text.Length < 2 || text[0] != '$' || (!Char.IsLetter(text[1]) && text[1] != '_'))
@@ -31,7 +31,7 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label, bool requiresReturnValue = true)
 		{
 			if (locals.ContainsKey(Name))
 				return Expression.Property(locals[Name], "Value");

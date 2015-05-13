@@ -20,12 +20,13 @@ namespace QuickConverter.Tokens
 
 		public Type Type { get; private set; }
 
-		internal override void SetPostTarget(TokenBase target)
+		internal override bool SetPostTarget(TokenBase target)
 		{
 			Target = target;
+			return true;
 		}
 
-		internal override bool TryGetToken(ref string text, out TokenBase token)
+		internal override bool TryGetToken(ref string text, out TokenBase token, bool requireReturnValue = true)
 		{
 			token = null;
 			string temp = text.TrimStart();
@@ -40,7 +41,7 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label, bool requiresReturnValue = true)
 		{
 			return Expression.Convert(Expression.TypeAs(Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label), Type), typeof(object));
 		}

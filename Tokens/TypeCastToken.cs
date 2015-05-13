@@ -25,7 +25,7 @@ namespace QuickConverter.Tokens
 
 		private bool parseTarget;
 
-		internal override bool TryGetToken(ref string text, out TokenBase token)
+		internal override bool TryGetToken(ref string text, out TokenBase token, bool requireReturnValue = true)
 		{
 			token = null;
 			bool inQuotes = false;
@@ -65,7 +65,7 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label, bool requiresReturnValue = true)
 		{
 			CallSiteBinder binder = Binder.Convert(CSharpBinderFlags.ConvertExplicit, TargetType, dynamicContext ?? typeof(object));
 			return Expression.Convert(Expression.Dynamic(binder, TargetType, Target.GetExpression(parameters, locals, dataContainers, dynamicContext, label)), typeof(object));

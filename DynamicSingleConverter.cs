@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -37,7 +38,8 @@ namespace QuickConverter
 		private object[] _values;
 		private DataContainer[] _toDataContainers;
 		private DataContainer[] _fromDataContainers;
-		public DynamicSingleConverter(Func<object, object[], object, object> converter, Func<object, object[], object, object> convertBack, object[] values, string convertExp, string convertExpDebug, string convertBackExp, string convertBackExpDebug, Type pType, Type vType, DataContainer[] toDataContainers, DataContainer[] fromDataContainers)
+		private IValueConverter _chainedConverter;
+		public DynamicSingleConverter(Func<object, object[], object, object> converter, Func<object, object[], object, object> convertBack, object[] values, string convertExp, string convertExpDebug, string convertBackExp, string convertBackExpDebug, Type pType, Type vType, DataContainer[] toDataContainers, DataContainer[] fromDataContainers, IValueConverter chainedConverter)
 		{
 			_converter = converter;
 			_convertBack = convertBack;
@@ -50,12 +52,27 @@ namespace QuickConverter
 			ConvertBackExpressionDebugView = convertBackExpDebug;
 			PType = pType;
 			ValueType = vType;
+			_chainedConverter = chainedConverter;
 		}
 
-		private object DoConversion(object value, Type targetType, object parameter, Func<object, object[], object, object> func, bool convertingBack)
+		private object DoConversion(object value, Type targetType, object parameter, Func<object, object[], object, object> func, bool convertingBack, CultureInfo culture)
 		{
 			if (convertingBack)
 			{
+				if (_chainedConverter != null)
+				{
+					try { value = _chainedConverter.ConvertBack(value, targetType, parameter, culture); }
+					catch (Exception e)
+					{
+						EquationTokenizer.ThrowQuickConverterEvent(new ChainedConverterExceptionEventArgs(ConvertExpression, value, targetType, parameter, culture, true, _chainedConverter, this, e));
+						return DependencyProperty.UnsetValue;
+					}
+
+					if (value == DependencyProperty.UnsetValue || value == System.Windows.Data.Binding.DoNothing)
+						return value;
+
+				}
+
 				if (ValueType != null && !ValueType.IsInstanceOfType(value))
 					return System.Windows.Data.Binding.DoNothing;
 			}
@@ -91,8 +108,21 @@ namespace QuickConverter
 					}
 				}
 			}
+			
+			if (result == DependencyProperty.UnsetValue || result == System.Windows.Data.Binding.DoNothing)
+				return result;
 
-			if (result == null || result == DependencyProperty.UnsetValue || result == System.Windows.Data.Binding.DoNothing || targetType == null || targetType == typeof(object))
+			if (!convertingBack && _chainedConverter != null)
+			{
+				try { result = _chainedConverter.Convert(result, targetType, parameter, culture); }
+				catch (Exception e)
+				{
+					EquationTokenizer.ThrowQuickConverterEvent(new ChainedConverterExceptionEventArgs(ConvertExpression, result, targetType, parameter, culture, false, _chainedConverter, this, e));
+					return DependencyProperty.UnsetValue;
+				}
+			}
+
+			if (result == DependencyProperty.UnsetValue || result == System.Windows.Data.Binding.DoNothing || result == null || targetType == null || targetType == typeof(object))
 				return result;
 
 			if (targetType == typeof(string))
@@ -119,14 +149,14 @@ namespace QuickConverter
 			return result;
 		}
 
-		public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
 		{
-			return DoConversion(value, targetType, parameter, _converter, false);
+			return DoConversion(value, targetType, parameter, _converter, false, culture);
 		}
 
-		public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
 		{
-			return DoConversion(value, targetType, parameter, _convertBack, true);
+			return DoConversion(value, targetType, parameter, _convertBack, true, culture);
 		}
 	}
 }

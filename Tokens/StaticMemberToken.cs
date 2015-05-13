@@ -19,7 +19,7 @@ namespace QuickConverter.Tokens
 
 		public MemberInfo Member { get; private set; }
 
-		internal override bool TryGetToken(ref string text, out TokenBase token)
+		internal override bool TryGetToken(ref string text, out TokenBase token, bool requireReturnValue = true)
 		{
 			token = null;
 			var tuple = GetNameMatches(text, null, null).Where(tup => tup.Item1 is FieldInfo || tup.Item1 is PropertyInfo).Reverse().FirstOrDefault();
@@ -30,7 +30,7 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label, bool requiresReturnValue = true)
 		{
 			return Expression.Convert(Expression.MakeMemberAccess(null, Member), typeof(object));
 		}

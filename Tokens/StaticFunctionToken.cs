@@ -23,10 +23,10 @@ namespace QuickConverter.Tokens
 		public MethodInfo Method { get; private set; }
 		public ArgumentListToken Arguments { get; private set; }
 
-		internal override bool TryGetToken(ref string text, out TokenBase token)
+		internal override bool TryGetToken(ref string text, out TokenBase token, bool requireReturnValue = true)
 		{
 			token = null;
-			var list = GetNameMatches(text, null, null).Where(tup => tup.Item1 is MethodInfo && (tup.Item1 as MethodInfo).ReturnType != typeof(void)).ToArray();
+			var list = GetNameMatches(text, null, null).Where(tup => tup.Item1 is MethodInfo && ((tup.Item1 as MethodInfo).ReturnType != typeof(void) || !requireReturnValue)).ToArray();
 			Tuple<MethodInfo, TokenBase, string> info = null;
 			foreach (var method in list)
 			{
@@ -62,7 +62,7 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label, bool requiresReturnValue = true)
 		{
 			ParameterInfo[] pars = Method.GetParameters();
 			Expression[] args = new Expression[pars.Length];
@@ -79,7 +79,10 @@ namespace QuickConverter.Tokens
 					args[i] = Expression.Dynamic(binder, pars[i].ParameterType, Expression.Constant(pars[i].DefaultValue, typeof(object)));
 				}
 			}
-			return Expression.Convert(Expression.Call(Method, args), typeof(object));
+			var exp = Expression.Call(Method, args);
+			if (requiresReturnValue)
+				return Expression.Convert(exp, typeof(object));
+			return exp;
 		}
 	}
 }

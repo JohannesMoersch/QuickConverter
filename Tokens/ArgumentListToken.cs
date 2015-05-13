@@ -51,7 +51,7 @@ namespace QuickConverter.Tokens
 			this.allowTypeCasts = allowTypeCasts;
 		}
 
-		internal override bool TryGetToken(ref string text, out TokenBase token)
+		internal override bool TryGetToken(ref string text, out TokenBase token, bool requireReturnValue = true)
 		{
 			token = null;
 			var list = new List<TokenBase>();
@@ -72,7 +72,7 @@ namespace QuickConverter.Tokens
 				}
 				else if (findAssignments)
 				{
-					if (new AssignmentToken(assignmentType).TryGetToken(ref s, out newToken))
+					if (new LambdaAssignmentToken(assignmentType).TryGetToken(ref s, out newToken))
 						list.Add(newToken);
 					else
 						return false;
@@ -110,7 +110,7 @@ namespace QuickConverter.Tokens
 			return true;
 		}
 
-		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label)
+		internal override Expression GetExpression(List<ParameterExpression> parameters, Dictionary<string, ConstantExpression> locals, List<DataContainer> dataContainers, Type dynamicContext, LabelTarget label, bool requiresReturnValue = true)
 		{
 			throw new NotImplementedException();
 		}
