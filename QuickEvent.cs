@@ -6,14 +6,36 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Markup;
 using System.Windows.Media;
 using QuickConverter;
+using Expression = System.Linq.Expressions.Expression;
 
 namespace QuickConverter
 {
 	public class QuickEvent : MarkupExtension
 	{
+		public static object GetP0(DependencyObject obj) { return (object)obj.GetValue(P0Property); }
+		public static void SetP0(DependencyObject obj, object value) { obj.SetValue(P0Property, value); }
+		public static readonly DependencyProperty P0Property = DependencyProperty.RegisterAttached("P0", typeof(object), typeof(QuickEvent), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits));
+
+		public static object GetP1(DependencyObject obj) { return (object)obj.GetValue(P1Property); }
+		public static void SetP1(DependencyObject obj, object value) { obj.SetValue(P1Property, value); }
+		public static readonly DependencyProperty P1Property = DependencyProperty.RegisterAttached("P1", typeof(object), typeof(QuickEvent), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits));
+
+		public static object GetP2(DependencyObject obj) { return (object)obj.GetValue(P2Property); }
+		public static void SetP2(DependencyObject obj, object value) { obj.SetValue(P2Property, value); }
+		public static readonly DependencyProperty P2Property = DependencyProperty.RegisterAttached("P2", typeof(object), typeof(QuickEvent), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits));
+
+		public static object GetP3(DependencyObject obj) { return (object)obj.GetValue(P3Property); }
+		public static void SetP3(DependencyObject obj, object value) { obj.SetValue(P3Property, value); }
+		public static readonly DependencyProperty P3Property = DependencyProperty.RegisterAttached("P3", typeof(object), typeof(QuickEvent), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits));
+
+		public static object GetP4(DependencyObject obj) { return (object)obj.GetValue(P4Property); }
+		public static void SetP4(DependencyObject obj, object value) { obj.SetValue(P4Property, value); }
+		public static readonly DependencyProperty P4Property = DependencyProperty.RegisterAttached("P4", typeof(object), typeof(QuickEvent), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits));
+
 		private static Dictionary<string, Tuple<string, Delegate, string[], DataContainer[]>> handlers = new Dictionary<string, Tuple<string, Delegate, string[], DataContainer[]>>();
 
 		/// <summary>
@@ -47,6 +69,11 @@ namespace QuickConverter
 		/// <summary>Creates a constant parameter. This can be accessed inside the handler as $V9.</summary>
 		public object V9 { get; set; }
 
+		/// <summary>
+		/// This allows the delegate type to be explicitly instead of inferred from the service provider.
+		/// </summary>
+		public Type DelegateTypeOverride { get; set; }
+
 		public QuickEvent() { }
 
 		public QuickEvent(string handlerExpression)
@@ -58,10 +85,30 @@ namespace QuickConverter
 		{
 			try
 			{
-				if (Handler == null || !(serviceProvider is IProvideValueTarget) || !((serviceProvider as IProvideValueTarget).TargetProperty is EventInfo))
-					throw new Exception("QuickEvent must be used on event handlers only.");
-				var target = (serviceProvider as IProvideValueTarget).TargetProperty as EventInfo;
-				var types = target.EventHandlerType.GetMethod("Invoke").GetParameters().Select(p => p.ParameterType).ToArray();
+				if (String.IsNullOrWhiteSpace(Handler))
+					throw new Exception("A QuickEvent cannot be created without code for the handler.");
+
+				Type delegateType;
+				if (DelegateTypeOverride == null)
+				{
+					if (serviceProvider is IProvideValueTarget)
+					{
+						var prop = (serviceProvider as IProvideValueTarget).TargetProperty;
+						if (prop is EventInfo)
+							delegateType = (prop as EventInfo).EventHandlerType;
+						else if (prop is MethodInfo && (prop as MethodInfo).GetParameters().Length == 2 && typeof(Delegate).IsAssignableFrom((prop as MethodInfo).GetParameters()[1].ParameterType))
+							delegateType = (prop as MethodInfo).GetParameters()[1].ParameterType;
+						else
+							throw new Exception("QuickEvent must be used on event handlers only.");
+					}
+					else
+						throw new Exception("Either service provider or DelegateTypeOverride must have a value.");
+
+				}
+				else
+					delegateType = DelegateTypeOverride;
+
+				var types = delegateType.GetMethod("Invoke").GetParameters().Select(p => p.ParameterType).ToArray();
 				if (types.Length != 2)
 					throw new Exception("QuickEvent only supports event handlers with the standard (sender, eventArgs) signature.");
 
@@ -71,7 +118,7 @@ namespace QuickConverter
 
 				var instance = Activator.CreateInstance(handlerType, tuple.Item2, tuple.Item3, new[] { V0, V1, V2, V3, V4, V5, V6, V7, V8, V9 }, Handler, tuple.Item1, tuple.Item4);
 
-				return Delegate.CreateDelegate(target.EventHandlerType, instance, "Handle");
+				return Delegate.CreateDelegate(delegateType, instance, "Handle");
 			}
 			catch (Exception e)
 			{

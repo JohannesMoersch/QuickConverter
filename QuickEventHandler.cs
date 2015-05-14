@@ -37,6 +37,9 @@ namespace QuickConverter
 	{
 		private object[] _parArray;
 		private int _dataContextIndex = -1;
+		private int _eventArgsIndex = -1;
+		private int[] _pIndex = new int[] { -1, -1, -1, -1, -1 };
+
 		private object _lastSender;
 
 		public QuickEventHandler(Delegate handler, string[] parameters, object[] values, string expression, string expressionDebug, DataContainer[] dataContainers)
@@ -60,6 +63,10 @@ namespace QuickConverter
 			}
 			finally
 			{
+				if (_dataContextIndex >= 0)
+					_parArray[_dataContextIndex] = null;
+				if (_eventArgsIndex >= 0)
+					_parArray[_eventArgsIndex] = null;
 				if (_dataContainers != null)
 				{
 					foreach (var container in _dataContainers)
@@ -85,8 +92,8 @@ namespace QuickConverter
 						case "sender":
 							_parArray[i] = sender;
 							break;
-						case "args":
-							_parArray[i] = args;
+						case "eventArgs":
+							_eventArgsIndex = i;
 							break;
 						case "dataContext":
 							_dataContextIndex = i;
@@ -94,6 +101,8 @@ namespace QuickConverter
 						default:
 							if (par.Length == 2 && par[0] == 'V' && Char.IsDigit(par[1]))
 								_parArray[i] = typeof(QuickEvent).GetProperty(par).GetValue(this, null);
+							else if (par.Length == 2 && par[0] == 'P' && par[1] >= '0' && par[1] <= '4')
+								_pIndex[par[1] - '0'] = i;
 							else if (sender is FrameworkElement)
 							{
 								_parArray[i] = (sender as FrameworkElement).FindName(par);
@@ -105,12 +114,37 @@ namespace QuickConverter
 							break;
 					}
 				}
-				if (failMessage != null)
-					EquationTokenizer.ThrowQuickConverterEvent(new RuntimeEventHandlerExceptionEventArgs(sender, args, HandlerExpression, HandlerExpressionDebugView, Values, this, new Exception(failMessage)));
 			}
 			if (_dataContextIndex >= 0 && sender is FrameworkElement)
 				_parArray[_dataContextIndex] = (sender as FrameworkElement).DataContext;
-			return failMessage == null;
+			if (_eventArgsIndex >= 0)
+				_parArray[_eventArgsIndex] = args;
+			for (int i = 0; i <= 4; ++i)
+			{
+				if (_pIndex[i] == -1)
+					continue;
+				if (!(sender is DependencyObject))
+				{
+					failMessage = "Cannot access $P0-$P4 when sender is not a DependencyObject.";
+					break;
+				}
+				if (i == 0)
+					_parArray[_pIndex[i]] = QuickEvent.GetP0(sender as DependencyObject);
+				else if (i == 1)
+					_parArray[_pIndex[i]] = QuickEvent.GetP0(sender as DependencyObject);
+				else if (i == 2)
+					_parArray[_pIndex[i]] = QuickEvent.GetP0(sender as DependencyObject);
+				else if (i == 3)
+					_parArray[_pIndex[i]] = QuickEvent.GetP0(sender as DependencyObject);
+				else if (i == 4)
+					_parArray[_pIndex[i]] = QuickEvent.GetP0(sender as DependencyObject);
+			}
+			if (failMessage != null)
+			{
+				EquationTokenizer.ThrowQuickConverterEvent(new RuntimeEventHandlerExceptionEventArgs(sender, args, HandlerExpression, HandlerExpressionDebugView, Values, this, new Exception(failMessage)));
+				return false;
+			}
+			return true;
 		}
 	}
 }

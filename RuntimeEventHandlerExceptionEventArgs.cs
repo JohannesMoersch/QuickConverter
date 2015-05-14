@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows;
 
 namespace QuickConverter
 {
@@ -23,6 +24,12 @@ namespace QuickConverter
 		public object V7 { get; private set; }
 		public object V8 { get; private set; }
 		public object V9 { get; private set; }
+
+		public object P0 { get; private set; }
+		public object P1 { get; private set; }
+		public object P2 { get; private set; }
+		public object P3 { get; private set; }
+		public object P4 { get; private set; }
 
 		public QuickEventHandler Handler { get; private set; }
 
@@ -46,6 +53,14 @@ namespace QuickConverter
 			V7 = values[7];
 			V8 = values[8];
 			V9 = values[9];
+			if (sender is DependencyObject)
+			{
+				P0 = QuickEvent.GetP0(sender as DependencyObject);
+				P1 = QuickEvent.GetP1(sender as DependencyObject);
+				P2 = QuickEvent.GetP2(sender as DependencyObject);
+				P3 = QuickEvent.GetP3(sender as DependencyObject);
+				P4 = QuickEvent.GetP4(sender as DependencyObject);
+			}
 			Handler = handler;
 			Exception = exception;
 		}
