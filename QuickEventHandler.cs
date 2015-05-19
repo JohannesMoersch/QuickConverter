@@ -100,7 +100,7 @@ namespace QuickConverter
 							break;
 						default:
 							if (par.Length == 2 && par[0] == 'V' && Char.IsDigit(par[1]))
-								_parArray[i] = typeof(QuickEvent).GetProperty(par).GetValue(this, null);
+								_parArray[i] = Values[par[1] - '0'];
 							else if (par.Length == 2 && par[0] == 'P' && par[1] >= '0' && par[1] <= '4')
 								_pIndex[par[1] - '0'] = i;
 							else if (sender is FrameworkElement)
