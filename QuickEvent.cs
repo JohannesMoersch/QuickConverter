@@ -70,13 +70,27 @@ namespace QuickConverter
 		public object V9 { get; set; }
 
 		/// <summary>
+		/// If true, events are bubble up to the target control will be ignored.
+		/// </summary>
+		public bool IgnoreIfNotOriginalSource { get; set; }
+
+		/// <summary>
+		/// Indicates whether or not to set the event args handled flag to true.
+		/// </summary>
+		public bool SetHandled { get; set; }
+
+		/// <summary>
 		/// This allows the delegate type to be explicitly instead of inferred from the service provider.
 		/// </summary>
 		public Type DelegateTypeOverride { get; set; }
 
-		public QuickEvent() { }
+		public QuickEvent()
+		{
+			SetHandled = true;
+		}
 
 		public QuickEvent(string handlerExpression)
+			: this()
 		{
 			Handler = handlerExpression;
 		}
@@ -116,7 +130,7 @@ namespace QuickConverter
 
 				var handlerType = typeof(QuickEventHandler<,>).MakeGenericType(types);
 
-				var instance = Activator.CreateInstance(handlerType, tuple.Item2, tuple.Item3, new[] { V0, V1, V2, V3, V4, V5, V6, V7, V8, V9 }, Handler, tuple.Item1, tuple.Item4);
+				var instance = Activator.CreateInstance(handlerType, tuple.Item2, tuple.Item3, new[] { V0, V1, V2, V3, V4, V5, V6, V7, V8, V9 }, Handler, tuple.Item1, tuple.Item4, IgnoreIfNotOriginalSource, SetHandled);
 
 				return Delegate.CreateDelegate(delegateType, instance, "Handle");
 			}

@@ -39,16 +39,23 @@ namespace QuickConverter
 		private int _dataContextIndex = -1;
 		private int _eventArgsIndex = -1;
 		private int[] _pIndex = new int[] { -1, -1, -1, -1, -1 };
+		private bool _ignoreIfNotOriginalSource;
+		private bool _setHandled;
 
 		private object _lastSender;
 
-		public QuickEventHandler(Delegate handler, string[] parameters, object[] values, string expression, string expressionDebug, DataContainer[] dataContainers)
+		public QuickEventHandler(Delegate handler, string[] parameters, object[] values, string expression, string expressionDebug, DataContainer[] dataContainers, bool ignoreIfNotOriginalSource, bool setHandled)
 			: base(handler, parameters, values, expression, expressionDebug, dataContainers)
 		{
+			_ignoreIfNotOriginalSource = ignoreIfNotOriginalSource;
+			_setHandled = setHandled;
 		}
 
 		public void Handle(T1 sender, T2 args)
 		{
+			if (_ignoreIfNotOriginalSource && args is RoutedEventArgs && (args as RoutedEventArgs).OriginalSource != (args as RoutedEventArgs).Source)
+				return;
+
 			if (!SetupParameters(sender, args))
 				return;
 
@@ -72,6 +79,8 @@ namespace QuickConverter
 					foreach (var container in _dataContainers)
 						container.Value = null;
 				}
+				if (_setHandled && args is RoutedEventArgs)
+					(args as RoutedEventArgs).Handled = true;
 			}
 		}
 

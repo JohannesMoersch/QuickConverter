@@ -24,6 +24,8 @@ namespace QuickConverter.Tokens
 
 		public TokenBase Value { get; private set; }
 
+		public Operator Operator { get; private set; }
+
 		internal override bool SetPostTarget(TokenBase target)
 		{
 			if (target is StaticMemberToken)
@@ -31,7 +33,9 @@ namespace QuickConverter.Tokens
 				if ((target as StaticMemberToken).Member is PropertyInfo)
 				{
 					if (!((target as StaticMemberToken).Member as PropertyInfo).CanWrite)
-						return false;
+						throw new Exception("Static member \"" + ((target as StaticMemberToken).Member as PropertyInfo).Name + "\" is readonly and cannot be set.");
+					else if (Operator != default(Operator) && !((target as StaticMemberToken).Member as PropertyInfo).CanRead)
+						throw new Exception("Static member \"" + ((target as StaticMemberToken).Member as PropertyInfo).Name + "\" is writeonly and cannot be read.");
 				}
 				else if (!((target as StaticMemberToken).Member is FieldInfo))
 					return false;
@@ -39,6 +43,8 @@ namespace QuickConverter.Tokens
 			else if (!(target is InstanceMemberToken))
 				return false;
 			Target = target;
+			if (Operator != default(Operator))
+				Value = new BinaryOperatorToken(Target, Value, Operator);
 			return true;
 		}
 
@@ -46,15 +52,36 @@ namespace QuickConverter.Tokens
 		{
 			token = null;
 			string temp = text;
-			if (temp.Length < 2 || temp[0] != '=')
+			var op = default(Operator);
+			if (temp.Length < 2)
 				return false;
+			if (temp[0] != '=')
+			{
+				if (temp[1] != '=' || temp.Length < 3)
+					return false;
+				for (int i = (int)Operator.Multiply; i <= (int)Operator.Subtract; ++i)
+				{
+					if (EquationTokenizer.representations[i][0] == temp[0])
+						op = (Operator)i;
+				}
+				for (int i = (int)Operator.BitwiseAnd; i <= (int)Operator.BitwiseXor; ++i)
+				{
+					if (EquationTokenizer.representations[i][0] == temp[0])
+						op = (Operator)i;
+				}
+				if (op == default(Operator))
+					return false;
+			}
 
-			temp = temp.Substring(1).TrimStart();
+			if (op == default(Operator))
+				temp = temp.Substring(1).TrimStart();
+			else
+				temp = temp.Substring(2).TrimStart();
 			TokenBase valToken;
 			if (!EquationTokenizer.TryEvaluateExpression(temp, out valToken))
 				return false;
 			text = "";
-			token = new AssignmentToken() { Value = valToken };
+			token = new AssignmentToken() { Value = valToken, Operator = op };
 			return true;
 		}
 
