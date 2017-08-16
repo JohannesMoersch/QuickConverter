@@ -102,7 +102,6 @@ namespace QuickConverter.Tokens
 			Type genericType = null;
 			TokenBase inits = null;
 			string str = temp.TrimStart();
-			MethodInfo method = null;
 			if (str.Length > 0 && str[0] == '{')
 			{
 				if (array && (args as ArgumentListToken).Arguments.Length != 0)

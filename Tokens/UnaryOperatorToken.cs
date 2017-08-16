@@ -50,7 +50,6 @@ namespace QuickConverter.Tokens
 			{
 				case Operator.Positive:
 					return value.GetExpression(parameters, locals, dataContainers, dynamicContext, label);
-					break;
 				case Operator.Negative:
 					type = ExpressionType.Negate;
 					break;

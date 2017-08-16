@@ -140,13 +140,13 @@ namespace QuickConverter
 				if (i == 0)
 					_parArray[_pIndex[i]] = QuickEvent.GetP0(sender as DependencyObject);
 				else if (i == 1)
-					_parArray[_pIndex[i]] = QuickEvent.GetP0(sender as DependencyObject);
+					_parArray[_pIndex[i]] = QuickEvent.GetP1(sender as DependencyObject);
 				else if (i == 2)
-					_parArray[_pIndex[i]] = QuickEvent.GetP0(sender as DependencyObject);
+					_parArray[_pIndex[i]] = QuickEvent.GetP2(sender as DependencyObject);
 				else if (i == 3)
-					_parArray[_pIndex[i]] = QuickEvent.GetP0(sender as DependencyObject);
+					_parArray[_pIndex[i]] = QuickEvent.GetP3(sender as DependencyObject);
 				else if (i == 4)
-					_parArray[_pIndex[i]] = QuickEvent.GetP0(sender as DependencyObject);
+					_parArray[_pIndex[i]] = QuickEvent.GetP4(sender as DependencyObject);
 			}
 			if (failMessage != null)
 			{
